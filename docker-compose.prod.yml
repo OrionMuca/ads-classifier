@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: marketplace_api
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/marketplace?schema=public
+      - ELASTICSEARCH_NODE=http://elasticsearch:9200
+      - JWT_SECRET=super-secret-key
+      - PORT=3001
+    depends_on:
+      - postgres
+      - elasticsearch
+    networks:
+      - marketplace_network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: marketplace_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - api
+    networks:
+      - marketplace_network
+
+  # Extend existing services to join the network
+  postgres:
+    networks:
+      - marketplace_network
+
+  elasticsearch:
+    networks:
+      - marketplace_network
+
+  redis:
+    networks:
+      - marketplace_network
+
+networks:
+  marketplace_network:
+    driver: bridge
