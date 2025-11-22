@@ -36,6 +36,7 @@ let PostsService = class PostsService {
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
         await this.elasticsearchService.indexPost(post);
@@ -85,6 +86,7 @@ let PostsService = class PostsService {
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
     }
@@ -114,6 +116,7 @@ let PostsService = class PostsService {
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
         await this.elasticsearchService.updatePost(updatedPost);

@@ -17,7 +17,12 @@ export declare class SearchController {
         topCategories: string[];
     }>;
     getSearchHistory(user: any, limit?: string): Promise<any[]>;
-    suggest(query: string): Promise<any>;
+    suggest(query: string, user?: any): Promise<any[]>;
+    getTrendingSearches(limit?: string): Promise<any>;
+    getPopularProducts(size?: string): Promise<{
+        hits: any[];
+        total: number;
+    }>;
     reindex(user: any): Promise<{
         count: number;
         errors: boolean;

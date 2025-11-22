@@ -27,6 +27,7 @@ let LocationsService = class LocationsService {
                 latitude: true,
                 longitude: true,
                 weight: true,
+                hasZones: true,
                 _count: {
                     select: { posts: true },
                 },

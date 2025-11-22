@@ -12,6 +12,7 @@ export declare class LocationsService {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }[]>;
     findOne(id: string): Promise<({
         _count: {
@@ -27,6 +28,7 @@ export declare class LocationsService {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }) | null>;
     findByCity(city: string): Promise<({
         _count: {
@@ -42,6 +44,7 @@ export declare class LocationsService {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }) | null>;
     findNearby(latitude: number, longitude: number, radiusKm?: number): Promise<{
         id: string;
@@ -53,5 +56,6 @@ export declare class LocationsService {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }[]>;
 }

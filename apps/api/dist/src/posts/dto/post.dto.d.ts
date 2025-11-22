@@ -10,6 +10,7 @@ export declare class CreatePostDto {
     price: number;
     categoryId: string;
     locationId: string;
+    zoneId?: string;
     images?: string[];
 }
 export declare class UpdatePostDto {
@@ -18,6 +19,7 @@ export declare class UpdatePostDto {
     price?: number;
     categoryId?: string;
     locationId?: string;
+    zoneId?: string;
     images?: string[];
     status?: PostStatus;
 }

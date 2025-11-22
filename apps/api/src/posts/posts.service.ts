@@ -26,6 +26,7 @@ export class PostsService {
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
 
@@ -82,6 +83,7 @@ export class PostsService {
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
     }
@@ -115,6 +117,7 @@ export class PostsService {
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
 

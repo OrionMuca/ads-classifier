@@ -70,8 +70,21 @@ export class SearchController {
     }
 
     @Get('suggest')
-    async suggest(@Query('query') query: string) {
-        return this.elasticsearchService.getSuggestions(query);
+    async suggest(
+        @Query('query') query: string,
+        @CurrentUser() user?: any,
+    ) {
+        return this.elasticsearchService.getSuggestions(query || '', user?.userId);
+    }
+
+    @Get('trending')
+    async getTrendingSearches(@Query('limit') limit?: string) {
+        return this.elasticsearchService.getTrendingSearches(limit ? parseInt(limit) : 10);
+    }
+
+    @Get('popular')
+    async getPopularProducts(@Query('size') size?: string) {
+        return this.elasticsearchService.getPopularProducts(size ? parseInt(size) : 20);
     }
 
     @Post('reindex')

@@ -64,6 +64,7 @@ export declare class AdminService {
             userId: string;
             createdAt: Date;
             updatedAt: Date;
+            zoneId: string | null;
         })[];
         total: number;
         page: number;
@@ -113,5 +114,6 @@ export declare class AdminService {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     })[]>;
 }

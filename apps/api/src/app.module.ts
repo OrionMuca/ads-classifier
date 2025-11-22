@@ -10,6 +10,8 @@ import { SearchModule } from './search/search.module';
 import { AdminModule } from './admin/admin.module';
 import { CategoriesModule } from './categories/categories.module';
 import { LocationsModule } from './locations/locations.module';
+import { UploadModule } from './upload/upload.module';
+import { ZonesModule } from './zones/zones.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { LocationsModule } from './locations/locations.module';
     AdminModule,
     CategoriesModule,
     LocationsModule,
+    UploadModule,
+    ZonesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

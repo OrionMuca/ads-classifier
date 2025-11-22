@@ -12,6 +12,7 @@ export declare class LocationsController {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }[]>;
     findOne(id: string): Promise<({
         _count: {
@@ -27,6 +28,7 @@ export declare class LocationsController {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }) | null>;
     findByCity(city: string): Promise<({
         _count: {
@@ -42,5 +44,6 @@ export declare class LocationsController {
         latitude: number | null;
         longitude: number | null;
         weight: number;
+        hasZones: boolean;
     }) | null>;
 }

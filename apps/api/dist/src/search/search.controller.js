@@ -51,8 +51,14 @@ let SearchController = class SearchController {
     async getSearchHistory(user, limit) {
         return this.elasticsearchService.getUserSearchHistory(user.userId, limit ? parseInt(limit) : 50);
     }
-    async suggest(query) {
-        return this.elasticsearchService.getSuggestions(query);
+    async suggest(query, user) {
+        return this.elasticsearchService.getSuggestions(query || '', user?.userId);
+    }
+    async getTrendingSearches(limit) {
+        return this.elasticsearchService.getTrendingSearches(limit ? parseInt(limit) : 10);
+    }
+    async getPopularProducts(size) {
+        return this.elasticsearchService.getPopularProducts(size ? parseInt(size) : 20);
     }
     async reindex(user) {
         const posts = await this.prisma.post.findMany({
@@ -100,10 +106,25 @@ __decorate([
 __decorate([
     (0, common_1.Get)('suggest'),
     __param(0, (0, common_1.Query)('query')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "suggest", null);
+__decorate([
+    (0, common_1.Get)('trending'),
+    __param(0, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], SearchController.prototype, "suggest", null);
+], SearchController.prototype, "getTrendingSearches", null);
+__decorate([
+    (0, common_1.Get)('popular'),
+    __param(0, (0, common_1.Query)('size')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], SearchController.prototype, "getPopularProducts", null);
 __decorate([
     (0, common_1.Post)('reindex'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

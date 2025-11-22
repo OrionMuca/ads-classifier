@@ -56,6 +56,7 @@ export declare class UsersService {
             userId: string;
             createdAt: Date;
             updatedAt: Date;
+            zoneId: string | null;
         })[];
         total: number;
         page: number;
@@ -88,6 +89,7 @@ export declare class UsersService {
             userId: string;
             createdAt: Date;
             updatedAt: Date;
+            zoneId: string | null;
         })[];
         total: number;
         page: number;

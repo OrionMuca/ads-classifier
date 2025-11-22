@@ -24,7 +24,15 @@ export declare class PostsController {
             latitude: number | null;
             longitude: number | null;
             weight: number;
+            hasZones: boolean;
         };
+        zone: {
+            id: string;
+            locationId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+        } | null;
         user: {
             id: string;
             name: string | null;
@@ -43,6 +51,7 @@ export declare class PostsController {
         userId: string;
         createdAt: Date;
         updatedAt: Date;
+        zoneId: string | null;
     }>;
     findAll(page: string, limit: string): Promise<{
         posts: ({
@@ -66,6 +75,7 @@ export declare class PostsController {
                 latitude: number | null;
                 longitude: number | null;
                 weight: number;
+                hasZones: boolean;
             };
             user: {
                 id: string;
@@ -85,6 +95,7 @@ export declare class PostsController {
             userId: string;
             createdAt: Date;
             updatedAt: Date;
+            zoneId: string | null;
         })[];
         total: number;
         page: number;
@@ -111,7 +122,15 @@ export declare class PostsController {
             latitude: number | null;
             longitude: number | null;
             weight: number;
+            hasZones: boolean;
         };
+        zone: {
+            id: string;
+            locationId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+        } | null;
         user: {
             id: string;
             name: string | null;
@@ -130,6 +149,7 @@ export declare class PostsController {
         userId: string;
         createdAt: Date;
         updatedAt: Date;
+        zoneId: string | null;
     }) | null>;
     findByUserId(userId: string): Promise<{
         id: string;
@@ -144,6 +164,7 @@ export declare class PostsController {
         userId: string;
         createdAt: Date;
         updatedAt: Date;
+        zoneId: string | null;
     }[]>;
     update(id: string, updatePostDto: UpdatePostDto, req: any): Promise<{
         category: {
@@ -166,7 +187,15 @@ export declare class PostsController {
             latitude: number | null;
             longitude: number | null;
             weight: number;
+            hasZones: boolean;
         };
+        zone: {
+            id: string;
+            locationId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+        } | null;
         user: {
             id: string;
             name: string | null;
@@ -185,6 +214,7 @@ export declare class PostsController {
         userId: string;
         createdAt: Date;
         updatedAt: Date;
+        zoneId: string | null;
     }>;
     remove(id: string, req: any): Promise<{
         message: string;

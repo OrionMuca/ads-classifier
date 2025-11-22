@@ -25,7 +25,13 @@ export declare class ElasticsearchService implements OnModuleInit {
         hits: any[];
         total: number;
     }>;
-    getSuggestions(query: string): Promise<any>;
+    getSuggestions(query: string, userId?: string): Promise<any[]>;
+    private calculateSimilarity;
+    getTrendingSearches(limit?: number): Promise<any>;
+    getPopularProducts(size?: number): Promise<{
+        hits: any[];
+        total: number;
+    }>;
     reindexAll(posts: any[]): Promise<{
         count: number;
         errors: boolean;

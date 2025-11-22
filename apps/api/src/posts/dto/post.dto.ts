@@ -24,6 +24,10 @@ export class CreatePostDto {
     @IsUUID()
     locationId: string;
 
+    @IsUUID()
+    @IsOptional()
+    zoneId?: string;
+
     @IsArray()
     @IsString({ each: true })
     @IsOptional()
@@ -51,6 +55,10 @@ export class UpdatePostDto {
     @IsUUID()
     @IsOptional()
     locationId?: string;
+
+    @IsUUID()
+    @IsOptional()
+    zoneId?: string;
 
     @IsArray()
     @IsString({ each: true })

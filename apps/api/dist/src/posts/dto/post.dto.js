@@ -24,6 +24,7 @@ class CreatePostDto {
     price;
     categoryId;
     locationId;
+    zoneId;
     images;
 }
 exports.CreatePostDto = CreatePostDto;
@@ -49,6 +50,11 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePostDto.prototype, "locationId", void 0);
 __decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePostDto.prototype, "zoneId", void 0);
+__decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.IsOptional)(),
@@ -60,6 +66,7 @@ class UpdatePostDto {
     price;
     categoryId;
     locationId;
+    zoneId;
     images;
     status;
 }
@@ -90,6 +97,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdatePostDto.prototype, "locationId", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdatePostDto.prototype, "zoneId", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
