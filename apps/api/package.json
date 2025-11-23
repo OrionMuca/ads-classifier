@@ -21,6 +21,7 @@
     "seed": "ts-node prisma/seed.ts",
     "seed:posts": "ts-node prisma/seed-posts.ts",
     "seed:ads": "ts-node prisma/seed-ads.ts",
+    "seed:themes": "ts-node prisma/seed-themes.ts",
     "check:post": "ts-node scripts/check-post.ts",
     "check:elasticsearch": "ts-node scripts/check-elasticsearch.ts",
     "reindex": "ts-node reindex.ts",

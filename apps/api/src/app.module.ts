@@ -13,6 +13,7 @@ import { LocationsModule } from './locations/locations.module';
 import { UploadModule } from './upload/upload.module';
 import { ZonesModule } from './zones/zones.module';
 import { AdsModule } from './ads/ads.module';
+import { ThemeModule } from './theme/theme.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AdsModule } from './ads/ads.module';
     UploadModule,
     ZonesModule,
     AdsModule,
+    ThemeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

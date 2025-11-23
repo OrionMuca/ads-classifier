@@ -1,8 +1,10 @@
+import { AdLayout } from '@prisma/client';
 export declare class CreateAdDto {
     title: string;
     image: string;
     link?: string;
     position: number;
+    layout?: AdLayout;
     active?: boolean;
 }
 export declare class UpdateAdDto {
@@ -10,5 +12,6 @@ export declare class UpdateAdDto {
     image?: string;
     link?: string;
     position?: number;
+    layout?: AdLayout;
     active?: boolean;
 }

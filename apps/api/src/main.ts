@@ -7,8 +7,15 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Enable CORS
-  app.enableCors();
+  // Enable CORS - allow all origins for development (mobile access)
+  app.enableCors({
+    origin: true, // Allow all origins in development
+    credentials: false, // Set to false since we're using JWT tokens, not cookies
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: [],
+    maxAge: 86400, // 24 hours
+  });
 
   // Serve static files from uploads directory
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
@@ -19,7 +26,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Strip unknown properties
-      forbidNonWhitelisted: true, // Throw error on unknown properties
+      forbidNonWhitelisted: false, // Don't throw error, just strip unknown properties (like id, createdAt, updatedAt)
       transform: true, // Auto-transform payloads to DTO instances
       transformOptions: {
         enableImplicitConversion: true, // Automatically convert types
@@ -27,6 +34,16 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
+
+  const port = process.env.PORT || 3000;
+  const host = '0.0.0.0'; // Listen on all interfaces
+  
+  await app.listen(port, host, () => {
+    console.log(`🚀 Backend API running on http://0.0.0.0:${port}`);
+    console.log(`📱 Accessible from network:`);
+    console.log(`   - http://192.168.1.7:${port}`);
+    console.log(`   - http://192.168.88.235:${port}`);
+    console.log(`   - http://localhost:${port} (local)`);
+  });
 }
 bootstrap();

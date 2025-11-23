@@ -34,6 +34,9 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVERNAME=kibana
       - SERVERPUBLICBASEURL=http://localhost:5601
+    volumes:
+      - ./apps/api/kibana-dashboards:/kibana-dashboards:ro
+      - ./scripts/kibana-import-dashboards.sh:/import-dashboards.sh:ro
     depends_on:
       - elasticsearch
 

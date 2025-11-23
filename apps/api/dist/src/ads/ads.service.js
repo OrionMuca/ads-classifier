@@ -24,6 +24,7 @@ let AdsService = class AdsService {
                 image: createAdDto.image,
                 link: createAdDto.link,
                 position: createAdDto.position,
+                layout: createAdDto.layout ?? 'CARD',
                 active: createAdDto.active ?? true,
             },
         });

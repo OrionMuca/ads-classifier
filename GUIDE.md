@@ -10,6 +10,21 @@ A comprehensive guide for the Marketplace application with all commands, explana
 4. [Kibana Setup](#kibana-setup)
 5. [Troubleshooting](#troubleshooting)
 6. [Development Commands](#development-commands)
+7. [Future Improvements](#future-improvements)
+
+---
+
+## 🚀 Future Improvements
+
+### Planning Documents
+- **[UX Improvements Plan](./UX_IMPROVEMENTS_PLAN.md)**: Comprehensive plan for UX enhancements, ad layouts, theme customization
+- **[Kibana Dashboards Guide](./KIBANA_DASHBOARDS_GUIDE.md)**: Guide for implementing pre-selected Kibana dashboards from elastic-content-share.eu
+
+### Upcoming Features
+- Ad layout options (Card vs Banner)
+- Theme customization from admin panel
+- Enhanced home page UX
+- Automated Kibana dashboard imports
 
 ---
 

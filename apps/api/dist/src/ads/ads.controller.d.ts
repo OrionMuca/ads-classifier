@@ -12,6 +12,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     }[]>;
@@ -24,6 +25,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     } | null>;
@@ -36,6 +38,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     } | null>;
@@ -48,6 +51,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     }[]>;
@@ -60,6 +64,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     }>;
@@ -72,6 +77,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     }>;
@@ -84,6 +90,7 @@ export declare class AdsController {
         image: string;
         link: string | null;
         position: number;
+        layout: import(".prisma/client").$Enums.AdLayout;
         active: boolean;
         clickCount: number;
     }>;
