@@ -21,6 +21,7 @@ const categories_module_1 = require("./categories/categories.module");
 const locations_module_1 = require("./locations/locations.module");
 const upload_module_1 = require("./upload/upload.module");
 const zones_module_1 = require("./zones/zones.module");
+const ads_module_1 = require("./ads/ads.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -38,6 +39,7 @@ exports.AppModule = AppModule = __decorate([
             locations_module_1.LocationsModule,
             upload_module_1.UploadModule,
             zones_module_1.ZonesModule,
+            ads_module_1.AdsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

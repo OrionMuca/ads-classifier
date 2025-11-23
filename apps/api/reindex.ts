@@ -7,7 +7,7 @@ const esClient = new Client({
     node: process.env.ELASTICSEARCH_NODE || 'http://localhost:9200',
 });
 
-const indexName = 'marketplace_posts';
+const indexName = 'marketplace_posts_v2'; // Match the index name in ElasticsearchService
 
 async function main() {
     console.log('Starting reindex...');
@@ -45,6 +45,7 @@ async function main() {
         include: {
             category: true,
             location: true,
+            zone: true,
         },
     });
 
@@ -60,14 +61,16 @@ async function main() {
                 title: post.title,
                 description: post.description,
                 price: parseFloat(post.price.toString()),
-                status: post.status,
-                viewCount: post.viewCount,
-                categoryId: post.categoryId,
+                status: post.status || 'ACTIVE',
+                viewCount: post.viewCount || 0,
+                categoryId: post.categoryId || post.category?.id,
                 categoryName: post.category?.name,
                 categorySlug: post.category?.slug,
-                locationId: post.locationId,
+                locationId: post.locationId || post.location?.id,
                 city: post.location?.city,
                 country: post.location?.country || 'Albania',
+                zoneId: post.zoneId || post.zone?.id,
+                zoneName: post.zone?.name,
                 images: post.images,
                 userId: post.userId,
                 createdAt: post.createdAt,

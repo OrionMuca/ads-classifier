@@ -6,7 +6,7 @@ const prisma = new client_1.PrismaClient();
 const esClient = new elasticsearch_1.Client({
     node: process.env.ELASTICSEARCH_NODE || 'http://localhost:9200',
 });
-const indexName = 'marketplace_posts';
+const indexName = 'marketplace_posts_v2';
 async function main() {
     console.log('Starting reindex...');
     const exists = await esClient.indices.exists({ index: indexName });
@@ -40,6 +40,7 @@ async function main() {
         include: {
             category: true,
             location: true,
+            zone: true,
         },
     });
     console.log(`Found ${posts.length} posts to index.`);
@@ -53,14 +54,16 @@ async function main() {
                 title: post.title,
                 description: post.description,
                 price: parseFloat(post.price.toString()),
-                status: post.status,
-                viewCount: post.viewCount,
-                categoryId: post.categoryId,
+                status: post.status || 'ACTIVE',
+                viewCount: post.viewCount || 0,
+                categoryId: post.categoryId || post.category?.id,
                 categoryName: post.category?.name,
                 categorySlug: post.category?.slug,
-                locationId: post.locationId,
+                locationId: post.locationId || post.location?.id,
                 city: post.location?.city,
                 country: post.location?.country || 'Albania',
+                zoneId: post.zoneId || post.zone?.id,
+                zoneName: post.zone?.name,
                 images: post.images,
                 userId: post.userId,
                 createdAt: post.createdAt,

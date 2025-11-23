@@ -1,3 +1,8 @@
+-- Truncate tables (in correct order due to foreign keys)
+TRUNCATE TABLE "Post" CASCADE;
+TRUNCATE TABLE "Category" CASCADE;
+TRUNCATE TABLE "Ad" CASCADE;
+
 -- Seed Admin User
 -- Password: admin123
 INSERT INTO "User" (id, email, password, name, phone, role, "createdAt", "updatedAt") VALUES

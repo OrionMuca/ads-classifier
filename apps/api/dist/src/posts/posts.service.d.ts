@@ -103,7 +103,7 @@ export declare class PostsService {
         page: number;
         totalPages: number;
     }>;
-    findOne(id: string): Promise<({
+    findOne(id: string): Promise<{
         category: {
             id: string;
             description: string | null;
@@ -152,7 +152,7 @@ export declare class PostsService {
         createdAt: Date;
         updatedAt: Date;
         zoneId: string | null;
-    }) | null>;
+    }>;
     findByUserId(userId: string): Promise<{
         id: string;
         title: string;

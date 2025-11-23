@@ -207,9 +207,7 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'your@email.com';
 
 ## 📚 Documentation
 
-- [Quick Start Guide](./QUICK_START.md)
-- [PostgreSQL Setup](./POSTGRESQL_SETUP.md)
-- [Walkthrough](./walkthrough.md)
+- **[Complete Guide](./GUIDE.md)** - All commands, explanations, and troubleshooting in one place
 
 ## 🐛 Troubleshooting
 

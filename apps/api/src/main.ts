@@ -16,11 +16,16 @@ async function bootstrap() {
   });
 
   // Enable global validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip unknown properties
+      forbidNonWhitelisted: true, // Throw error on unknown properties
+      transform: true, // Auto-transform payloads to DTO instances
+      transformOptions: {
+        enableImplicitConversion: true, // Automatically convert types
+      },
+    }),
+  );
 
   await app.listen(3000);
 }

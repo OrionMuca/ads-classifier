@@ -17,7 +17,16 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed": "ts-node prisma/seed.ts",
+    "seed:posts": "ts-node prisma/seed-posts.ts",
+    "seed:ads": "ts-node prisma/seed-ads.ts",
+    "check:post": "ts-node scripts/check-post.ts",
+    "check:elasticsearch": "ts-node scripts/check-elasticsearch.ts",
+    "reindex": "ts-node reindex.ts",
+    "sync:elasticsearch": "ts-node scripts/sync-elasticsearch.ts",
+    "list:indexes": "ts-node scripts/list-indexes.ts",
+    "consolidate:indexes": "ts-node scripts/consolidate-indexes.ts"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.11.1",
@@ -87,6 +96,6 @@
     "testEnvironment": "node"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed-posts.ts"
+    "seed": "ts-node prisma/seed.ts"
   }
 }

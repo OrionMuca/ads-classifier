@@ -74,7 +74,7 @@ let PostsService = class PostsService {
         };
     }
     async findOne(id) {
-        return this.prisma.post.findUnique({
+        const post = await this.prisma.post.findUnique({
             where: { id },
             include: {
                 user: {
@@ -89,6 +89,10 @@ let PostsService = class PostsService {
                 zone: true,
             },
         });
+        if (!post) {
+            throw new common_1.NotFoundException(`Post with ID ${id} not found`);
+        }
+        return post;
     }
     async findByUserId(userId) {
         return this.prisma.post.findMany({
@@ -100,8 +104,11 @@ let PostsService = class PostsService {
     }
     async update(id, updatePostDto, userId) {
         const post = await this.prisma.post.findUnique({ where: { id } });
-        if (!post || post.userId !== userId) {
-            throw new Error('Unauthorized');
+        if (!post) {
+            throw new common_1.NotFoundException(`Post with ID ${id} not found`);
+        }
+        if (post.userId !== userId) {
+            throw new common_1.ForbiddenException('You do not have permission to update this post');
         }
         const updatedPost = await this.prisma.post.update({
             where: { id },
@@ -124,8 +131,11 @@ let PostsService = class PostsService {
     }
     async remove(id, userId) {
         const post = await this.prisma.post.findUnique({ where: { id } });
-        if (!post || post.userId !== userId) {
-            throw new Error('Unauthorized');
+        if (!post) {
+            throw new common_1.NotFoundException(`Post with ID ${id} not found`);
+        }
+        if (post.userId !== userId) {
+            throw new common_1.ForbiddenException('You do not have permission to delete this post');
         }
         await this.prisma.post.delete({ where: { id } });
         await this.elasticsearchService.deletePost(id);

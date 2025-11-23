@@ -12,6 +12,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { LocationsModule } from './locations/locations.module';
 import { UploadModule } from './upload/upload.module';
 import { ZonesModule } from './zones/zones.module';
+import { AdsModule } from './ads/ads.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ZonesModule } from './zones/zones.module';
     LocationsModule,
     UploadModule,
     ZonesModule,
+    AdsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

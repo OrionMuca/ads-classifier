@@ -9,6 +9,8 @@ import {
     UseGuards,
     Req,
     Query,
+    HttpCode,
+    HttpStatus,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
@@ -18,12 +20,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class PostsController {
     constructor(private readonly postsService: PostsService) { }
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    create(@Body() createPostDto: CreatePostDto, @Req() req: any) {
-        return this.postsService.create(createPostDto, req.user.userId);
-    }
-
     @Get()
     findAll(@Query('page') page: string, @Query('limit') limit: string) {
         return this.postsService.findAll(
@@ -32,19 +28,28 @@ export class PostsController {
         );
     }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.postsService.findOne(id);
-    }
-
+    // Specific routes before dynamic ones
     @UseGuards(JwtAuthGuard)
     @Get('user/:userId')
     findByUserId(@Param('userId') userId: string) {
         return this.postsService.findByUserId(userId);
     }
 
+    @Get(':id')
+    findOne(@Param('id') id: string) {
+        return this.postsService.findOne(id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    create(@Body() createPostDto: CreatePostDto, @Req() req: any) {
+        return this.postsService.create(createPostDto, req.user.userId);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Patch(':id')
+    @HttpCode(HttpStatus.OK)
     update(
         @Param('id') id: string,
         @Body() updatePostDto: UpdatePostDto,
@@ -55,7 +60,8 @@ export class PostsController {
 
     @UseGuards(JwtAuthGuard)
     @Delete(':id')
-    remove(@Param('id') id: string, @Req() req: any) {
-        return this.postsService.remove(id, req.user.userId);
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async remove(@Param('id') id: string, @Req() req: any) {
+        await this.postsService.remove(id, req.user.userId);
     }
 }

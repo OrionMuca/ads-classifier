@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ElasticsearchService } from '../search/elasticsearch.service';
 import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
@@ -71,7 +71,7 @@ export class PostsService {
     }
 
     async findOne(id: string) {
-        return this.prisma.post.findUnique({
+        const post = await this.prisma.post.findUnique({
             where: { id },
             include: {
                 user: {
@@ -86,6 +86,12 @@ export class PostsService {
                 zone: true,
             },
         });
+
+        if (!post) {
+            throw new NotFoundException(`Post with ID ${id} not found`);
+        }
+
+        return post;
     }
 
     async findByUserId(userId: string) {
@@ -98,10 +104,15 @@ export class PostsService {
     }
 
     async update(id: string, updatePostDto: UpdatePostDto, userId: string) {
-        // Verify ownership
+        // Verify post exists
         const post = await this.prisma.post.findUnique({ where: { id } });
-        if (!post || post.userId !== userId) {
-            throw new Error('Unauthorized');
+        if (!post) {
+            throw new NotFoundException(`Post with ID ${id} not found`);
+        }
+
+        // Verify ownership
+        if (post.userId !== userId) {
+            throw new ForbiddenException('You do not have permission to update this post');
         }
 
         const updatedPost = await this.prisma.post.update({
@@ -128,10 +139,15 @@ export class PostsService {
     }
 
     async remove(id: string, userId: string) {
-        // Verify ownership
+        // Verify post exists
         const post = await this.prisma.post.findUnique({ where: { id } });
-        if (!post || post.userId !== userId) {
-            throw new Error('Unauthorized');
+        if (!post) {
+            throw new NotFoundException(`Post with ID ${id} not found`);
+        }
+
+        // Verify ownership
+        if (post.userId !== userId) {
+            throw new ForbiddenException('You do not have permission to delete this post');
         }
 
         await this.prisma.post.delete({ where: { id } });
