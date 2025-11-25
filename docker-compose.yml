@@ -34,6 +34,10 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVERNAME=kibana
       - SERVERPUBLICBASEURL=http://localhost:5601
+      # Suppress encryption key warnings (optional - only needed for AI Assistant)
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=dev-encryption-key-min-32-chars-long-for-dev
+      # Disable features that require paid licenses
+      - XPACK_LICENSE_SELF_GENERATED_TYPE=basic
     volumes:
       - ./apps/api/kibana-dashboards:/kibana-dashboards:ro
       - ./scripts/kibana-import-dashboards.sh:/import-dashboards.sh:ro
