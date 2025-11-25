@@ -15,15 +15,35 @@ export class ElasticsearchService implements OnModuleInit {
     }
 
     async onModuleInit() {
-        await this.createIndexIfNotExists();
-        await this.createSearchHistoryIndexIfNotExists();
+        // Retry logic for Elasticsearch connection (handles startup race conditions)
+        const maxRetries = 5;
+        const retryDelay = 2000; // 2 seconds
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                await this.client.ping();
+                await this.createIndexIfNotExists();
+                await this.createSearchHistoryIndexIfNotExists();
+                console.log('✅ Elasticsearch indexes initialized successfully');
+                return;
+            } catch (error: any) {
+                if (attempt === maxRetries) {
+                    console.error(`❌ Failed to initialize Elasticsearch after ${maxRetries} attempts:`, error.message);
+                    console.error('⚠️  Elasticsearch might not be ready yet. The service will continue, but search features may not work.');
+                    return; // Don't crash the app, just log the error
+                }
+                console.log(`⏳ Elasticsearch not ready (attempt ${attempt}/${maxRetries}), retrying in ${retryDelay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+        }
     }
 
     private async createIndexIfNotExists() {
-        const exists = await this.client.indices.exists({ index: this.indexName });
+        try {
+            const exists = await this.client.indices.exists({ index: this.indexName });
 
-        if (!exists) {
-            await this.client.indices.create({
+            if (!exists) {
+                await this.client.indices.create({
                 index: this.indexName,
                 settings: {
                     analysis: {
@@ -85,13 +105,22 @@ export class ElasticsearchService implements OnModuleInit {
                     },
                 },
             });
+            }
+        } catch (error: any) {
+            // If index already exists or other non-critical error, log and continue
+            if (error.message?.includes('resource_already_exists_exception')) {
+                // Index already exists, that's fine
+                return;
+            }
+            throw error; // Re-throw other errors to be handled by retry logic
         }
     }
 
     private async createSearchHistoryIndexIfNotExists() {
-        const exists = await this.client.indices.exists({ index: this.searchHistoryIndexName });
+        try {
+            const exists = await this.client.indices.exists({ index: this.searchHistoryIndexName });
 
-        if (!exists) {
+            if (!exists) {
             await this.client.indices.create({
                 index: this.searchHistoryIndexName,
                 mappings: {
@@ -128,6 +157,14 @@ export class ElasticsearchService implements OnModuleInit {
                 // Ignore if mapping already exists or index doesn't support dynamic mapping
                 console.log('Mapping update skipped:', error);
             }
+        }
+        } catch (error: any) {
+            // If index already exists or other non-critical error, log and continue
+            if (error.message?.includes('resource_already_exists_exception')) {
+                // Index already exists, that's fine
+                return;
+            }
+            throw error; // Re-throw other errors to be handled by retry logic
         }
     }
 
@@ -194,6 +231,7 @@ export class ElasticsearchService implements OnModuleInit {
         searchAfter?: any[];
         size?: number;
         userCity?: string;
+        sortBy?: 'newest' | 'price-low' | 'price-high' | 'popular';
     }) {
         const must: any[] = [];
         const filter: any[] = [];
@@ -230,7 +268,41 @@ export class ElasticsearchService implements OnModuleInit {
             filter.push({ range: { price: range } });
         }
 
-        // Execute search with createdAt sort (not _id)
+        // Determine sort order based on sortBy parameter
+        let sort: any[] = [];
+        switch (params.sortBy) {
+            case 'price-low':
+                sort = [
+                    { price: 'asc' },
+                    { createdAt: 'desc' },
+                    { id: 'desc' },
+                ];
+                break;
+            case 'price-high':
+                sort = [
+                    { price: 'desc' },
+                    { createdAt: 'desc' },
+                    { id: 'desc' },
+                ];
+                break;
+            case 'popular':
+                // Sort by viewCount if available, otherwise by createdAt
+                sort = [
+                    { viewCount: { missing: '_last', order: 'desc' } },
+                    { createdAt: 'desc' },
+                    { id: 'desc' },
+                ];
+                break;
+            case 'newest':
+            default:
+                sort = [
+                    { createdAt: 'desc' },
+                    { id: 'desc' },
+                ];
+                break;
+        }
+
+        // Execute search with dynamic sort
         const result = await this.client.search({
             index: this.indexName,
             size: params.size || 20,
@@ -240,10 +312,7 @@ export class ElasticsearchService implements OnModuleInit {
                     filter,
                 },
             },
-            sort: [
-                { createdAt: 'desc' },
-                { id: 'desc' }, // Use the id keyword field, not _id metadata
-            ],
+            sort,
             search_after: params.searchAfter,
         });
 

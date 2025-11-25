@@ -18,9 +18,17 @@
         "refreshInterval": {
           "pause": false,
           "value": 30000
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
       "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        },
         {
           "name": "panel_1",
           "type": "visualization",
@@ -65,10 +73,16 @@
         "description": "",
         "version": 1,
         "kibanaSavedObjectMeta": {
-          "searchSourceJSON": "{\"index\":\"marketplace_posts_v2\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
-      "references": []
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        }
+      ]
     },
     {
       "id": "posts-over-time",
@@ -82,10 +96,16 @@
         "description": "",
         "version": 1,
         "kibanaSavedObjectMeta": {
-          "searchSourceJSON": "{\"index\":\"marketplace_posts_v2\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
-      "references": []
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        }
+      ]
     },
     {
       "id": "top-categories",
@@ -99,10 +119,16 @@
         "description": "",
         "version": 1,
         "kibanaSavedObjectMeta": {
-          "searchSourceJSON": "{\"index\":\"marketplace_posts_v2\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
-      "references": []
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        }
+      ]
     },
     {
       "id": "price-distribution",
@@ -116,10 +142,16 @@
         "description": "",
         "version": 1,
         "kibanaSavedObjectMeta": {
-          "searchSourceJSON": "{\"index\":\"marketplace_posts_v2\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
-      "references": []
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        }
+      ]
     },
     {
       "id": "posts-by-city",
@@ -133,10 +165,16 @@
         "description": "",
         "version": 1,
         "kibanaSavedObjectMeta": {
-          "searchSourceJSON": "{\"index\":\"marketplace_posts_v2\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
-      "references": []
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        }
+      ]
     },
     {
       "id": "price-statistics",
@@ -150,10 +188,16 @@
         "description": "",
         "version": 1,
         "kibanaSavedObjectMeta": {
-          "searchSourceJSON": "{\"index\":\"marketplace_posts_v2\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+          "searchSourceJSON": "{\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\",\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
         }
       },
-      "references": []
+      "references": [
+        {
+          "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+          "type": "index-pattern",
+          "id": "cf5e4dfa-ea47-4166-9110-2494c0ad2643"
+        }
+      ]
     }
   ]
 }

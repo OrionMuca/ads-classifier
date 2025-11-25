@@ -20,6 +20,7 @@ export class SearchController {
         @Query('maxPrice') maxPrice?: string,
         @Query('searchAfter') searchAfter?: string,
         @Query('size') size?: string,
+        @Query('sortBy') sortBy?: string,
         @CurrentUser() user?: any,
     ) {
         const result = await this.elasticsearchService.search({
@@ -30,6 +31,7 @@ export class SearchController {
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             searchAfter: searchAfter ? JSON.parse(searchAfter) : undefined,
             size: size ? parseInt(size) : 20,
+            sortBy: sortBy as 'newest' | 'price-low' | 'price-high' | 'popular' | undefined,
         });
 
         // Track search for authenticated users
