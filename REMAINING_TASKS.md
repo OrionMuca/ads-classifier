@@ -21,52 +21,50 @@
 
 ## 🚧 Remaining Tasks
 
-### 1. **Ad Banner Layout Component** (High Priority)
-**Status:** Pending  
-**Files to Create/Update:**
-- `apps/web/components/AdBanner.tsx` (new)
-- `apps/web/app/page.tsx` (update to handle BANNER layout)
-- `apps/web/components/AdCard.tsx` (update to check layout type)
-
-**What needs to be done:**
-- Create `AdBanner` component for full-width horizontal banner ads
-- Update `page.tsx` to render `AdBanner` when `ad.layout === 'BANNER'`
-- Update `AdCard` to only render when `ad.layout === 'CARD'`
-- Handle banner ads spanning multiple columns in grid
-
-**Estimated Time:** 30-45 minutes
-
----
-
-### 2. **Home Page UX Improvements** (High Priority)
+### 1. **Enhanced Hero Section** (High Priority)
 **Status:** Pending  
 **Files to Create/Update:**
 - `apps/web/components/home/HeroSection.tsx` (new)
-- `apps/web/components/home/CategoryFilters.tsx` (new)
-- `apps/web/components/home/ViewToggle.tsx` (new)
-- `apps/web/app/page.tsx` (update)
+- `apps/web/app/page.tsx` (update to use new HeroSection)
 
 **What needs to be done:**
-- **Hero Section:** Dynamic rotating featured posts/ads with CTA
-- **Category Quick Filters:** Horizontal scrollable category chips
-- **View Toggle:** Grid view (current) vs List view option
-- **Sort Options:** Newest, Price (Low-High), Price (High-Low), Most Popular
+- Create dynamic rotating hero section with featured posts/ads
+- Add call-to-action buttons
+- Replace current static hero section
+- Auto-rotate featured content
 
-**Estimated Time:** 2-3 hours
+**Estimated Time:** 1-2 hours
 
 ---
 
-### 3. **Sort Options** (Medium Priority)
+### 2. **Category Quick Filters** (High Priority)
 **Status:** Pending  
-**Files to Update:**
-- `apps/web/app/page.tsx` (add sort state and UI)
-- `apps/api/src/search/search.service.ts` (add sort parameters)
+**Files to Create/Update:**
+- `apps/web/components/home/CategoryFilters.tsx` (new)
+- `apps/web/app/page.tsx` (update to include category filters)
 
 **What needs to be done:**
-- Add sort dropdown/buttons in UI
-- Implement backend sorting logic
-- Update Elasticsearch queries to support sorting
-- Handle sort state in URL params
+- Create horizontal scrollable category chips component
+- Display above the posts grid
+- Allow quick filtering by clicking category chips
+- Show active category state
+
+**Estimated Time:** 1 hour
+
+---
+
+### 3. **View Toggle (Grid/List)** (Medium Priority)
+**Status:** Pending  
+**Files to Create/Update:**
+- `apps/web/components/home/ViewToggle.tsx` (new)
+- `apps/web/app/page.tsx` (add view state and toggle)
+- `apps/web/components/ProductCard.tsx` (update for list view)
+
+**What needs to be done:**
+- Add grid/list view toggle button
+- Implement list view layout for posts
+- Persist user preference (localStorage)
+- Update ProductCard to support both layouts
 
 **Estimated Time:** 1-2 hours
 
@@ -83,22 +81,29 @@
 
 ---
 
+## ✅ Already Completed
+
+- ✅ **Ad Banner Layout Component** - Fully implemented and working
+- ✅ **Sort Options** - Backend and frontend implemented
+- ✅ **Basic Hero Section** - Static version exists (needs enhancement)
+
+---
+
 ## 🎯 Recommended Implementation Order
 
-1. **Ad Banner Layout Component** (Quick win, ~30 min)
+1. **Category Quick Filters** (Quick win, ~1 hour)
    - Most straightforward
-   - Completes the ad layout feature
-   - Immediate visual impact
+   - Immediate UX improvement
+   - Easy to implement
 
-2. **Home Page UX Improvements** (High impact, ~2-3 hours)
-   - Hero section
-   - Category filters
-   - View toggle
-   - Significantly improves UX
+2. **Enhanced Hero Section** (High impact, ~1-2 hours)
+   - Dynamic rotating content
+   - Better first impression
+   - More engaging
 
-3. **Sort Options** (Nice to have, ~1-2 hours)
+3. **View Toggle** (Nice to have, ~1-2 hours)
    - Enhances user experience
-   - Relatively simple to implement
+   - Gives users layout choice
 
 4. **A/B Testing** (Optional, ~2-3 hours)
    - Advanced feature
@@ -108,9 +113,9 @@
 
 ## 📊 Progress Summary
 
-**Completed:** 9/13 tasks (69%)  
-**Remaining:** 4 tasks  
-**Estimated Total Time:** 5-8 hours
+**Completed:** 11/14 tasks (79%)  
+**Remaining:** 3 main tasks + 1 optional  
+**Estimated Total Time:** 3-6 hours
 
 ---
 
@@ -118,21 +123,25 @@
 
 To continue implementation:
 
-1. **Start with Ad Banner:**
+1. **Start with Category Quick Filters:**
    ```bash
-   # Create AdBanner component
-   # Update page.tsx to handle both layouts
+   # Create CategoryFilters component
+   # Add horizontal scrollable chips above grid
+   # Update page.tsx to include component
    ```
 
-2. **Then Home Page UX:**
+2. **Then Enhanced Hero Section:**
    ```bash
-   # Create HeroSection, CategoryFilters, ViewToggle
-   # Integrate into page.tsx
+   # Create HeroSection with rotating featured content
+   # Replace static hero in page.tsx
+   # Add CTA buttons
    ```
 
-3. **Finally Sort Options:**
+3. **Finally View Toggle:**
    ```bash
-   # Add sort UI and backend logic
+   # Create ViewToggle component
+   # Add grid/list state management
+   # Update ProductCard for list layout
    ```
 
 ---
