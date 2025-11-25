@@ -1,0 +1,68 @@
+'use client';
+
+import { useEffect } from 'react';
+import api from '@/lib/api';
+
+interface AdBannerProps {
+    ad: {
+        id: string;
+        title: string;
+        image: string;
+        link?: string;
+    };
+}
+
+export function AdBanner({ ad }: AdBannerProps) {
+    // Track ad view when component mounts
+    useEffect(() => {
+        api.post(`/ads/${ad.id}/view`).catch(() => {
+            // Silently fail if tracking fails
+        });
+    }, [ad.id]);
+
+    const handleClick = () => {
+        // Track click
+        api.post(`/ads/${ad.id}/click`).catch(() => {
+            // Silently fail if tracking fails
+        });
+
+        // Open link if provided
+        if (ad.link) {
+            window.open(ad.link, '_blank', 'noopener,noreferrer');
+        }
+    };
+
+    const content = (
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative group cursor-pointer hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200">
+            <div className="relative w-full h-48 sm:h-64 md:h-80 overflow-hidden bg-gray-100 dark:bg-gray-700">
+                <img
+                    src={ad.image}
+                    alt={ad.title}
+                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-2 right-2 bg-primary-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
+                    Ad
+                </div>
+                {/* Overlay gradient for better text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                {/* Title overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+                    <h3 className="text-white text-lg sm:text-xl md:text-2xl font-bold drop-shadow-lg">
+                        {ad.title}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    );
+
+    if (ad.link) {
+        return (
+            <div onClick={handleClick} className="cursor-pointer">
+                {content}
+            </div>
+        );
+    }
+
+    return content;
+}
+
