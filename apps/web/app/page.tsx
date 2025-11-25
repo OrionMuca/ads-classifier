@@ -302,27 +302,6 @@ export default function Home() {
                 </div>
                 <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
               </div>
-                filters={filters}
-                sortBy={sortBy}
-                onFilterRemove={(filterType) => {
-                  if (filterType === 'price') {
-                    setFilters((prev) => ({ ...prev, minPrice: '', maxPrice: '' }));
-                  } else if (filterType === 'sort') {
-                    setSortBy('newest');
-                  } else {
-                    setFilters((prev) => ({ ...prev, [filterType]: '' }));
-                  }
-                }}
-                onClearAll={() => {
-                  setFilters({
-                    categoryId: '',
-                    locationId: '',
-                    minPrice: '',
-                    maxPrice: '',
-                  });
-                  setSortBy('newest');
-                }}
-              />
               
               <div className="space-y-6">
                 {renderGroups.map((group, groupIndex) => {
