@@ -12,6 +12,9 @@ import { AdCard } from '@/components/AdCard';
 import { AdBanner } from '@/components/AdBanner';
 import { RecommendedSection } from '@/components/RecommendedSection';
 import { ActiveFilters } from '@/components/ActiveFilters';
+import { CategoryFilters } from '@/components/home/CategoryFilters';
+import { HeroSection } from '@/components/home/HeroSection';
+import { ViewToggle, ViewMode } from '@/components/home/ViewToggle';
 import { SortOption } from '@/components/FilterDrawer';
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 
@@ -29,6 +32,22 @@ export default function Home() {
   });
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('viewMode');
+      return (saved === 'grid' || saved === 'list') ? saved : 'grid';
+    }
+    return 'grid';
+  });
+
+  // Save view mode to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('viewMode', viewMode);
+    }
+  }, [viewMode]);
 
   // Sync search state with URL query param - always update when URL changes
   useEffect(() => {
@@ -204,20 +223,19 @@ export default function Home() {
       <Navbar />
 
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        {/* Hero Section - Simplified without duplicate search */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl font-bold mb-6 text-center">
-              Gjeni çdo gjë që ju nevojitet
-            </h1>
-            <p className="text-center text-primary-100 text-lg mb-8">
-              Kërkoni në shiritin e kërkimit për të gjetur produkte të shumta
-            </p>
-          </div>
-        </div>
+        {/* Enhanced Hero Section with rotating featured content */}
+        <HeroSection />
 
         {/* Recommended Section (only visible when logged in and no active search) */}
         {!search && <RecommendedSection />}
+
+        {/* Category Quick Filters */}
+        <CategoryFilters
+          selectedCategoryId={filters.categoryId}
+          onCategorySelect={(categoryId) => {
+            setFilters((prev) => ({ ...prev, categoryId }));
+          }}
+        />
 
         {/* Posts Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -256,8 +274,34 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* Active Filters - Shows only when filters are applied */}
-              <ActiveFilters
+              {/* View Toggle and Active Filters Row */}
+              <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <ActiveFilters
+                    filters={filters}
+                    sortBy={sortBy}
+                    onFilterRemove={(filterType) => {
+                      if (filterType === 'price') {
+                        setFilters((prev) => ({ ...prev, minPrice: '', maxPrice: '' }));
+                      } else if (filterType === 'sort') {
+                        setSortBy('newest');
+                      } else {
+                        setFilters((prev) => ({ ...prev, [filterType]: '' }));
+                      }
+                    }}
+                    onClearAll={() => {
+                      setFilters({
+                        categoryId: '',
+                        locationId: '',
+                        minPrice: '',
+                        maxPrice: '',
+                      });
+                      setSortBy('newest');
+                    }}
+                  />
+                </div>
+                <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              </div>
                 filters={filters}
                 sortBy={sortBy}
                 onFilterRemove={(filterType) => {
@@ -291,11 +335,21 @@ export default function Home() {
                       </div>
                     );
                   } else {
-                    // Render grid with posts and card ads
+                    // Render grid or list with posts and card ads
+                    const isListView = viewMode === 'list';
                     return (
-                      <div key={`grid-${groupIndex}`} className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      <div
+                        key={`${viewMode}-${groupIndex}`}
+                        className={
+                          isListView
+                            ? 'space-y-4'
+                            : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
+                        }
+                      >
                         {group.items.map((item, itemIndex) => {
                           if (item.type === 'ad') {
+                            // Ads only show in grid view
+                            if (isListView) return null;
                             return <AdCard key={`ad-${item.data.id}-${itemIndex}`} ad={item.data} />;
                           }
                           return (
@@ -303,6 +357,7 @@ export default function Home() {
                               key={item.data.id}
                               post={item.data}
                               showSaveButton={true}
+                              viewMode={viewMode}
                             />
                           );
                         })}

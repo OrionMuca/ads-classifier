@@ -10,9 +10,10 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProductCardProps {
     post: Post | any; // Allow any for Elasticsearch flattened format
     showSaveButton?: boolean; // Show save button
+    viewMode?: 'grid' | 'list'; // View mode for layout
 }
 
-export function ProductCard({ post, showSaveButton = false }: ProductCardProps) {
+export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }: ProductCardProps) {
     const { isAuthenticated } = useAuth();
     const queryClient = useQueryClient();
 
@@ -59,6 +60,73 @@ export function ProductCard({ post, showSaveButton = false }: ProductCardProps) 
         saveMutation.mutate();
     };
 
+    // List view layout
+    if (viewMode === 'list') {
+        return (
+            <Link href={`/posts/${post.id}`}>
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 group cursor-pointer hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 overflow-hidden relative flex flex-row h-32 sm:h-40">
+                    {/* Save Button */}
+                    {showSaveButton && isAuthenticated && (
+                        <button
+                            onClick={handleSaveClick}
+                            disabled={saveMutation.isPending}
+                            className="absolute top-2 right-2 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full p-1.5 shadow-md hover:scale-110 transition-transform disabled:opacity-50"
+                            title={saveStatus?.isSaved ? 'Unsave' : 'Save'}
+                        >
+                            {saveStatus?.isSaved ? (
+                                <svg className="w-4 h-4 text-red-500 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                                </svg>
+                            ) : (
+                                <svg className="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            )}
+                        </button>
+                    )}
+
+                    {/* Image - Fixed width for list view */}
+                    <div className="relative w-32 sm:w-40 h-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                        <img
+                            src={post.images?.[0] || '/placeholder.png'}
+                            alt={post.title}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {post.status === 'SOLD' && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <span className="bg-red-600 text-white px-2 py-1 rounded-full font-semibold text-xs">
+                                    E shitur
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Content - Flex column with info */}
+                    <div className="flex flex-col flex-grow p-4 justify-between">
+                        <div>
+                            <h3 className="font-semibold text-base sm:text-lg text-slate-900 dark:text-white mb-2 line-clamp-2">
+                                {post.title}
+                            </h3>
+                            <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 mb-2">
+                                {city && <span>📍 {city}</span>}
+                                {categoryName && (
+                                    <span className="flex items-center gap-1">
+                                        {categoryIcon && <span>{categoryIcon}</span>}
+                                        <span>{categoryName}</span>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">
+                            €{post.price.toLocaleString()}
+                        </p>
+                    </div>
+                </div>
+            </Link>
+        );
+    }
+
+    // Grid view layout (default)
     return (
         <Link href={`/posts/${post.id}`}>
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 group cursor-pointer hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 overflow-hidden relative flex flex-col h-full">
