@@ -275,14 +275,14 @@ export class ElasticsearchService implements OnModuleInit {
                 sort = [
                     { price: 'asc' },
                     { createdAt: 'desc' },
-                    { id: 'desc' },
+                    { _id: 'desc' }, // Use Elasticsearch's internal _id field for tiebreaking
                 ];
                 break;
             case 'price-high':
                 sort = [
                     { price: 'desc' },
                     { createdAt: 'desc' },
-                    { id: 'desc' },
+                    { _id: 'desc' }, // Use Elasticsearch's internal _id field for tiebreaking
                 ];
                 break;
             case 'popular':
@@ -290,14 +290,14 @@ export class ElasticsearchService implements OnModuleInit {
                 sort = [
                     { viewCount: { missing: '_last', order: 'desc' } },
                     { createdAt: 'desc' },
-                    { id: 'desc' },
+                    { _id: 'desc' }, // Use Elasticsearch's internal _id field for tiebreaking
                 ];
                 break;
             case 'newest':
             default:
                 sort = [
                     { createdAt: 'desc' },
-                    { id: 'desc' },
+                    { _id: 'desc' }, // Use Elasticsearch's internal _id field for tiebreaking
                 ];
                 break;
         }
