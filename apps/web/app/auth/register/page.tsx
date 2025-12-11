@@ -91,6 +91,7 @@ export default function RegisterPage() {
                                     className="input"
                                     placeholder="+355 69 234 5678"
                                     pattern="^(\+355|0)[6-9]\d{8}$"
+                                    autoComplete="off"
                                 />
                                 <p className="text-xs text-slate-500 mt-1">
                                     Format: +355 69 234 5678 ose 069 234 5678

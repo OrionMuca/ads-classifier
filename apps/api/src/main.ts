@@ -12,7 +12,7 @@ async function bootstrap() {
     origin: true, // Allow all origins in development
     credentials: false, // Set to false since we're using JWT tokens, not cookies
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Id'],
     exposedHeaders: [],
     maxAge: 86400, // 24 hours
   });
@@ -39,11 +39,7 @@ async function bootstrap() {
   const host = '0.0.0.0'; // Listen on all interfaces
   
   await app.listen(port, host, () => {
-    console.log(`🚀 Backend API running on http://0.0.0.0:${port}`);
-    console.log(`📱 Accessible from network:`);
-    console.log(`   - http://192.168.1.7:${port}`);
-    console.log(`   - http://192.168.88.235:${port}`);
-    console.log(`   - http://localhost:${port} (local)`);
+    console.log(`🚀 Backend API running on ${host}:${port}`);
   });
 }
 bootstrap();

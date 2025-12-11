@@ -48,10 +48,46 @@
     @apply border-slate-200 dark:border-slate-700;
   }
 
+  html {
+    background-color: var(--theme-background);
+    color: var(--theme-text-primary);
+    @apply antialiased;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+  }
+  
   body {
     background-color: var(--theme-background);
     color: var(--theme-text-primary);
     @apply antialiased;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    position: relative;
+  }
+
+/* Safe area class for mobile devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+  /* Ensure tables inherit font-family from body */
+  table {
+    font-family: inherit;
+  }
+
+  table th,
+  table td {
+    font-family: inherit;
   }
 }
 

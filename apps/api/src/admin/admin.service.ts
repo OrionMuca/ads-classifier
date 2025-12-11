@@ -10,19 +10,34 @@ export class AdminService {
     ) { }
 
     // User Management
-    async getAllUsers() {
-        return this.prisma.user.findMany({
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: true,
-                createdAt: true,
-                _count: {
-                    select: { posts: true },
+    async getAllUsers(page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit;
+
+        const [users, total] = await Promise.all([
+            this.prisma.user.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    role: true,
+                    createdAt: true,
+                    _count: {
+                        select: { posts: true },
+                    },
                 },
-            },
-        });
+            }),
+            this.prisma.user.count(),
+        ]);
+
+        return {
+            users,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     async updateUserRole(userId: string, role: 'USER' | 'ADMIN') {
@@ -35,6 +50,26 @@ export class AdminService {
     async deleteUser(userId: string) {
         return this.prisma.user.delete({
             where: { id: userId },
+        });
+    }
+
+    async deactivateUser(userId: string, reason?: string) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                isActive: false,
+                deactivatedAt: new Date(),
+            },
+        });
+    }
+
+    async reactivateUser(userId: string) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                isActive: true,
+                deactivatedAt: null,
+            },
         });
     }
 
@@ -121,6 +156,11 @@ export class AdminService {
         };
     }
 
+    // Elasticsearch Health Check
+    async getElasticsearchHealth() {
+        return this.elasticsearchService.getHealth();
+    }
+
     // Elasticsearch Reindexing
     async reindexAllPosts() {
         const posts = await this.prisma.post.findMany({
@@ -130,10 +170,12 @@ export class AdminService {
                         id: true,
                         email: true,
                         name: true,
+                        isActive: true,
                     },
                 },
                 category: true,
                 location: true,
+                zone: true,
             },
         });
 
@@ -149,10 +191,129 @@ export class AdminService {
         };
     }
 
+    async fixElasticsearchAlias() {
+        return this.elasticsearchService.fixAliasWriteIndex();
+    }
+
     // Categories Management
-    async getAllCategories() {
-        return this.prisma.category.findMany({
-            orderBy: { name: 'asc' },
+    async getAllCategories(page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit;
+
+        const [categories, total] = await Promise.all([
+            this.prisma.category.findMany({
+                skip,
+                take: limit,
+                orderBy: { name: 'asc' },
+                include: {
+                    parent: { select: { id: true, name: true } },
+                    children: { select: { id: true, name: true } },
+                    _count: {
+                        select: { posts: true },
+                    },
+                },
+            }),
+            this.prisma.category.count(),
+        ]);
+
+        return {
+            categories,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    async createCategory(data: { name: string; slug: string; icon?: string; description?: string; parentId?: string }) {
+        return this.prisma.category.create({
+            data,
+            include: {
+                parent: { select: { id: true, name: true } },
+                children: { select: { id: true, name: true } },
+                _count: {
+                    select: { posts: true },
+                },
+            },
+        });
+    }
+
+    async updateCategory(id: string, data: { name?: string; slug?: string; icon?: string; description?: string; parentId?: string | null }) {
+        return this.prisma.category.update({
+            where: { id },
+            data,
+            include: {
+                parent: { select: { id: true, name: true } },
+                children: { select: { id: true, name: true } },
+                _count: {
+                    select: { posts: true },
+                },
+            },
+        });
+    }
+
+    async deleteCategory(id: string) {
+        // Check if category has posts
+        const category = await this.prisma.category.findUnique({
+            where: { id },
+            include: {
+                _count: { select: { posts: true } },
+                children: true,
+            },
+        });
+
+        if (!category) {
+            throw new Error('Category not found');
+        }
+
+        if (category._count.posts > 0) {
+            throw new Error('Cannot delete category with existing posts');
+        }
+
+        if (category.children.length > 0) {
+            throw new Error('Cannot delete category with subcategories. Delete subcategories first.');
+        }
+
+        return this.prisma.category.delete({
+            where: { id },
+        });
+    }
+
+    // Locations Management
+    async getAllLocations(page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit;
+
+        const [locations, total] = await Promise.all([
+            this.prisma.location.findMany({
+                skip,
+                take: limit,
+                orderBy: { weight: 'desc' },
+                include: {
+                    _count: {
+                        select: { posts: true },
+                    },
+                },
+            }),
+            this.prisma.location.count(),
+        ]);
+
+        return {
+            locations,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    async createLocation(data: { city: string; state?: string; country?: string; latitude?: number; longitude?: number; weight?: number; hasZones?: boolean }) {
+        return this.prisma.location.create({
+            data: {
+                city: data.city,
+                state: data.state,
+                country: data.country || 'Albania',
+                latitude: data.latitude,
+                longitude: data.longitude,
+                weight: data.weight ?? 0,
+                hasZones: data.hasZones ?? false,
+            },
             include: {
                 _count: {
                     select: { posts: true },
@@ -161,15 +322,161 @@ export class AdminService {
         });
     }
 
-    // Locations Management
-    async getAllLocations() {
-        return this.prisma.location.findMany({
-            orderBy: { weight: 'desc' },
+    async updateLocation(id: string, data: { city?: string; state?: string; country?: string; latitude?: number; longitude?: number; weight?: number; hasZones?: boolean }) {
+        return this.prisma.location.update({
+            where: { id },
+            data,
             include: {
                 _count: {
                     select: { posts: true },
                 },
             },
         });
+    }
+
+    async deleteLocation(id: string) {
+        // Check if location has posts
+        const location = await this.prisma.location.findUnique({
+            where: { id },
+            include: {
+                _count: { select: { posts: true } },
+                zones: true,
+            },
+        });
+
+        if (!location) {
+            throw new Error('Location not found');
+        }
+
+        if (location._count.posts > 0) {
+            throw new Error('Cannot delete location with existing posts');
+        }
+
+        if (location.zones.length > 0) {
+            throw new Error('Cannot delete location with zones. Delete zones first.');
+        }
+
+        return this.prisma.location.delete({
+            where: { id },
+        });
+    }
+
+    // Zones Management
+    async getAllZones(page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit;
+
+        const [zones, total] = await Promise.all([
+            this.prisma.zone.findMany({
+                skip,
+                take: limit,
+                include: {
+                    location: {
+                        select: {
+                            id: true,
+                            city: true,
+                            country: true,
+                        },
+                    },
+                    _count: {
+                        select: { posts: true },
+                    },
+                },
+                orderBy: [
+                    { location: { weight: 'desc' } },
+                    { name: 'asc' },
+                ],
+            }),
+            this.prisma.zone.count(),
+        ]);
+
+        return {
+            zones,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    async createZone(data: { name: string; locationId: string }) {
+        return this.prisma.zone.create({
+            data,
+            include: {
+                location: {
+                    select: {
+                        id: true,
+                        city: true,
+                        country: true,
+                    },
+                },
+                _count: {
+                    select: { posts: true },
+                },
+            },
+        });
+    }
+
+    async updateZone(id: string, data: { name?: string; locationId?: string }) {
+        return this.prisma.zone.update({
+            where: { id },
+            data,
+            include: {
+                location: {
+                    select: {
+                        id: true,
+                        city: true,
+                        country: true,
+                    },
+                },
+                _count: {
+                    select: { posts: true },
+                },
+            },
+        });
+    }
+
+    async deleteZone(id: string) {
+        // Check if zone has posts
+        const zone = await this.prisma.zone.findUnique({
+            where: { id },
+            include: {
+                _count: { select: { posts: true } },
+            },
+        });
+
+        if (!zone) {
+            throw new Error('Zone not found');
+        }
+
+        if (zone._count.posts > 0) {
+            throw new Error('Cannot delete zone with existing posts');
+        }
+
+        return this.prisma.zone.delete({
+            where: { id },
+        });
+    }
+
+    // Ads Management (with pagination)
+    async getAllAds(page: number = 1, limit: number = 20) {
+        const skip = (page - 1) * limit;
+
+        const [ads, total] = await Promise.all([
+            this.prisma.ad.findMany({
+                skip,
+                take: limit,
+                orderBy: [
+                    { position: 'asc' },
+                    { createdAt: 'desc' },
+                ],
+            }),
+            this.prisma.ad.count(),
+        ]);
+
+        return {
+            ads,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 }

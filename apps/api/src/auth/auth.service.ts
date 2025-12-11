@@ -102,7 +102,7 @@ export class AuthService {
                 { sub: userId, email },
                 {
                     secret: process.env.JWT_SECRET,
-                    expiresIn: '15m',
+                    expiresIn: '1d', // Changed from 15m to 1d (24 hours) for better UX
                 },
             ),
             this.jwtService.signAsync(

@@ -1,8 +1,10 @@
 'use client';
 
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import React from 'react';
+import { XMarkIcon, ChartBarIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { useCategories, useLocations } from '@/lib/api-hooks';
 import { SortOption } from '@/components/FilterDrawer';
+import { CategoryIcon } from '@/lib/category-icons';
 
 interface ActiveFiltersProps {
     filters: {
@@ -27,14 +29,21 @@ export function ActiveFilters({ filters, sortBy, onFilterRemove, onClearAll }: A
     const { data: categories = [] } = useCategories();
     const { data: locations = [] } = useLocations();
 
-    const activeFilters: Array<{ type: string; label: string; value: string }> = [];
+    const activeFilters: Array<{ 
+        type: string; 
+        label: string; 
+        value: string; 
+        icon?: React.ComponentType<{ className?: string }>;
+        categoryName?: string;
+    }> = [];
 
     // Sort filter (only show if not default)
     if (sortBy && sortBy !== 'newest') {
         activeFilters.push({
             type: 'sort',
-            label: `📊 ${sortLabels[sortBy]}`,
+            label: sortLabels[sortBy],
             value: sortBy,
+            icon: ChartBarIcon,
         });
     }
 
@@ -46,8 +55,9 @@ export function ActiveFilters({ filters, sortBy, onFilterRemove, onClearAll }: A
         if (category) {
             activeFilters.push({
                 type: 'categoryId',
-                label: category.icon ? `${category.icon} ${category.name}` : category.name,
+                label: category.name,
                 value: filters.categoryId,
+                categoryName: category.name,
             });
         }
     }
@@ -58,8 +68,9 @@ export function ActiveFilters({ filters, sortBy, onFilterRemove, onClearAll }: A
         if (location) {
             activeFilters.push({
                 type: 'locationId',
-                label: `📍 ${location.city}`,
+                label: location.city,
                 value: filters.locationId,
+                icon: MapPinIcon,
             });
         }
     }
@@ -85,24 +96,31 @@ export function ActiveFilters({ filters, sortBy, onFilterRemove, onClearAll }: A
     return (
         <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Filtrat aktive:</span>
-            {activeFilters.map((filter) => (
-                <button
-                    key={filter.type === 'price' ? 'price' : filter.value}
-                    onClick={() => {
-                        if (filter.type === 'price') {
-                            onFilterRemove('price');
-                        } else if (filter.type === 'sort') {
-                            onFilterRemove('sort');
-                        } else {
-                            onFilterRemove(filter.type as 'categoryId' | 'locationId');
-                        }
-                    }}
-                    className="group flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
-                >
-                    <span>{filter.label}</span>
-                    <XMarkIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                </button>
-            ))}
+            {activeFilters.map((filter) => {
+                const Icon = filter.icon;
+                return (
+                    <button
+                        key={filter.type === 'price' ? 'price' : filter.value}
+                        onClick={() => {
+                            if (filter.type === 'price') {
+                                onFilterRemove('price');
+                            } else if (filter.type === 'sort') {
+                                onFilterRemove('sort');
+                            } else {
+                                onFilterRemove(filter.type as 'categoryId' | 'locationId');
+                            }
+                        }}
+                        className="group flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
+                    >
+                        {Icon && <Icon className="w-4 h-4" />}
+                        {filter.categoryName && (
+                            <CategoryIcon categoryName={filter.categoryName} className="w-4 h-4" />
+                        )}
+                        <span>{filter.label}</span>
+                        <XMarkIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
+                    </button>
+                );
+            })}
             {activeFilters.length > 1 && (
                 <button
                     onClick={onClearAll}

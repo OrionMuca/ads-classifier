@@ -6,6 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useCategories, useLocations } from '@/lib/api-hooks';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { ImageUpload } from '@/components/ImageUpload';
 import { CategorySelector } from '@/components/CategorySelector';
 import { LocationSelector } from '@/components/LocationSelector';
@@ -14,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function EditPost() {
     const router = useRouter();
     const params = useParams();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading: authLoading } = useAuth();
     const postId = params.id as string;
 
     const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -40,9 +41,14 @@ export default function EditPost() {
         images: [] as string[],
     });
 
+    const { isLoading: authLoading } = useAuth();
+
     // Populate form when post data loads
     useEffect(() => {
         if (post) {
+            // Don't redirect while auth is still loading
+            if (authLoading) return;
+            
             // Check if user owns the post
             if (!isAuthenticated) {
                 router.push(`/posts/${postId}`);
@@ -59,7 +65,7 @@ export default function EditPost() {
                 images: post.images || [],
             });
         }
-    }, [post, isAuthenticated, postId, router]);
+    }, [post, isAuthenticated, authLoading, postId, router]);
 
     // Memoize callbacks to prevent infinite loops
     const handleLocationChange = useCallback((locationId: string) => {
@@ -144,7 +150,7 @@ export default function EditPost() {
         return (
             <>
                 <Navbar />
-                <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8">
+                <main className="bg-slate-50 dark:bg-slate-950 py-8 pb-20 lg:pb-8">
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="card">
                             <div className="text-center py-12">
@@ -162,7 +168,7 @@ export default function EditPost() {
         return (
             <>
                 <Navbar />
-                <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8">
+                <main className="bg-slate-50 dark:bg-slate-950 py-8 pb-20 lg:pb-8">
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="card">
                             <div className="text-center py-12">
@@ -185,7 +191,7 @@ export default function EditPost() {
         <>
             <Navbar hideSearch={true} />
 
-            <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8">
+            <main className="bg-slate-50 dark:bg-slate-950 py-8 pb-20 lg:pb-8">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="card">
                         <div className="flex items-center justify-between mb-6">
@@ -320,6 +326,8 @@ export default function EditPost() {
                     </div>
                 </div>
             </main>
+
+            <Footer />
         </>
     );
 }

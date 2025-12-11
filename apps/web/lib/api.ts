@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { getSessionId } from './session';
 
 // Get API URL from environment variable (Next.js standard approach)
 // Set NEXT_PUBLIC_API_URL in .env.local for local development
 // For mobile access: NEXT_PUBLIC_API_URL=http://192.168.1.7:3000 (your PC's IP)
-const getApiUrl = (): string => {
+export const getApiUrl = (): string => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     
     if (!apiUrl) {
@@ -44,11 +45,17 @@ api.interceptors.request.use((config) => {
         });
     }
     
-    // Add authentication token (client-side only)
+    // Add authentication token and session ID (client-side only)
     if (typeof window !== 'undefined') {
         const token = localStorage.getItem('accessToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        
+        // Add session ID for anonymous user tracking
+        const sessionId = getSessionId();
+        if (sessionId) {
+            config.headers['X-Session-Id'] = sessionId;
         }
     }
     

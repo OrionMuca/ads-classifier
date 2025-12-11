@@ -2,8 +2,9 @@
 
 import { useCategories } from '@/lib/api-hooks';
 import { Category } from '@/types';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { useRef, useState, useEffect } from 'react';
+import { CategoryIcon } from '@/lib/category-icons';
 
 interface CategoryFiltersProps {
     selectedCategoryId?: string;
@@ -104,7 +105,7 @@ export function CategoryFilters({ selectedCategoryId, onCategorySelect }: Catego
                             : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                     }`}
                 >
-                    <span>📋</span>
+                    <Squares2X2Icon className="w-4 h-4" />
                     <span>Të gjitha</span>
                 </button>
 
@@ -119,7 +120,14 @@ export function CategoryFilters({ selectedCategoryId, onCategorySelect }: Catego
                                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                         }`}
                     >
-                        {category.icon && <span>{category.icon}</span>}
+                        <CategoryIcon 
+                            categoryName={category.name} 
+                            className={`w-4 h-4 ${
+                                selectedCategoryId === category.id
+                                    ? 'text-white'
+                                    : 'text-slate-600 dark:text-slate-400'
+                            }`}
+                        />
                         <span>{category.name}</span>
                         {category._count?.posts && (
                             <span className={`text-xs ${

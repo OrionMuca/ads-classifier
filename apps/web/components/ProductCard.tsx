@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { CategoryIcon } from '@/lib/category-icons';
+import { MapPinIcon } from '@heroicons/react/24/outline';
 
 interface ProductCardProps {
     post: Post | any; // Allow any for Elasticsearch flattened format
@@ -64,7 +66,7 @@ export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }:
     if (viewMode === 'list') {
         return (
             <Link href={`/posts/${post.id}`}>
-                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 group cursor-pointer hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 overflow-hidden relative flex flex-row h-32 sm:h-40">
+                <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 group cursor-pointer hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 overflow-hidden relative flex flex-row h-20 sm:h-24 md:h-28">
                     {/* Save Button */}
                     {showSaveButton && isAuthenticated && (
                         <button
@@ -85,8 +87,8 @@ export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }:
                         </button>
                     )}
 
-                    {/* Image - Fixed width for list view */}
-                    <div className="relative w-32 sm:w-40 h-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                    {/* Image - Responsive width for list view */}
+                    <div className="relative w-20 sm:w-24 md:w-28 h-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
                         <img
                             src={post.images?.[0] || '/placeholder.png'}
                             alt={post.title}
@@ -94,30 +96,35 @@ export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }:
                         />
                         {post.status === 'SOLD' && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                <span className="bg-red-600 text-white px-2 py-1 rounded-full font-semibold text-xs">
+                                <span className="bg-red-600 text-white px-1.5 py-0.5 rounded-full font-semibold text-[10px]">
                                     E shitur
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Content - Flex column with info */}
-                    <div className="flex flex-col flex-grow p-4 justify-between">
+                    {/* Content - Mobile responsive */}
+                    <div className="flex flex-col flex-grow p-1.5 sm:p-2.5 md:p-3 justify-between">
                         <div>
-                            <h3 className="font-semibold text-base sm:text-lg text-slate-900 dark:text-white mb-2 line-clamp-2">
+                            <h3 className="font-medium text-[11px] sm:text-xs md:text-sm text-slate-900 dark:text-white mb-0.5 sm:mb-1 line-clamp-2 leading-tight">
                                 {post.title}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 mb-2">
-                                {city && <span>📍 {city}</span>}
+                            <div className="flex items-center gap-1 sm:gap-2 text-[9px] sm:text-[10px] md:text-xs text-slate-600 dark:text-slate-400">
+                                {city && (
+                                    <span className="flex items-center gap-0.5">
+                                        <MapPinIcon className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
+                                        <span className="hidden sm:inline">{city}</span>
+                                    </span>
+                                )}
                                 {categoryName && (
-                                    <span className="flex items-center gap-1">
-                                        {categoryIcon && <span>{categoryIcon}</span>}
-                                        <span>{categoryName}</span>
+                                    <span className="flex items-center gap-0.5">
+                                        <CategoryIcon categoryName={categoryName} className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
+                                        <span className="hidden sm:inline">{categoryName}</span>
                                     </span>
                                 )}
                             </div>
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">
+                        <p className="text-xs sm:text-sm md:text-base font-bold text-primary-600 dark:text-primary-400 mt-0.5 sm:mt-1">
                             €{post.price.toLocaleString()}
                         </p>
                     </div>
@@ -150,8 +157,8 @@ export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }:
                     </button>
                 )}
 
-                {/* Image - Fixed aspect ratio for consistent sizing */}
-                <div className="relative w-full aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                {/* Image - Compact aspect ratio (4:3) for better space usage */}
+                <div className="relative w-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" style={{ aspectRatio: '4 / 3' }}>
                     <img
                         src={post.images?.[0] || '/placeholder.png'}
                         alt={post.title}
@@ -159,37 +166,32 @@ export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }:
                     />
                     {post.status === 'SOLD' && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="bg-red-600 text-white px-2.5 py-1 rounded-full font-semibold text-[10px] sm:text-xs">
+                            <span className="bg-red-600 text-white px-2 py-0.5 rounded-full font-semibold text-[10px]">
                                 E shitur
                             </span>
                         </div>
                     )}
                 </div>
 
-                {/* Content - Flex column with consistent spacing, minimal on mobile */}
-                <div className="flex flex-col flex-grow p-2.5 sm:p-3 min-h-[80px] sm:min-h-[100px]">
-                    {/* Title - Smaller on mobile */}
-                    <h3 className="font-medium text-xs sm:text-sm text-slate-900 dark:text-white mb-1.5 sm:mb-2 line-clamp-2 leading-snug sm:leading-tight flex-grow">
+                {/* Content - Compact spacing */}
+                <div className="flex flex-col flex-grow p-2 sm:p-2.5">
+                    {/* Title - Compact */}
+                    <h3 className="font-medium text-[11px] sm:text-xs text-slate-900 dark:text-white mb-1 line-clamp-2 leading-tight">
                         {post.title}
                     </h3>
 
-                    {/* Price - Prominent but appropriately sized */}
-                    <p className="text-base sm:text-lg font-bold text-primary-600 dark:text-primary-400 mb-1.5 sm:mb-2">
+                    {/* Price - Compact but readable */}
+                    <p className="text-sm sm:text-base font-bold text-primary-600 dark:text-primary-400 mb-1">
                         €{post.price.toLocaleString()}
                     </p>
 
-                    {/* Location - Smaller on mobile, always visible */}
+                    {/* Location - Compact */}
                     {city && (
-                        <div className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mb-1">
-                            📍 {city}
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-0.5">
+                            <MapPinIcon className="w-2.5 h-2.5 flex-shrink-0" />
+                            {city}
                         </div>
                     )}
-
-                    {/* Category - Hidden on mobile, shown on larger screens */}
-                    <div className="hidden sm:flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
-                        {categoryIcon && <span>{categoryIcon}</span>}
-                        <span className="truncate">{categoryName}</span>
-                    </div>
                 </div>
             </div>
         </Link>

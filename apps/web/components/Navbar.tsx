@@ -32,6 +32,8 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [trendingProducts, setTrendingProducts] = useState<any[]>([]);
+    const [isLoadingTrendingProducts, setIsLoadingTrendingProducts] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -74,7 +76,8 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
     useEffect(() => {
         const urlQuery = searchParams.get('query') || '';
         const isInputFocused = document.activeElement === inputRef.current;
-        if (urlQuery !== searchQuery && !isInputFocused) {
+        // Only sync URL to input if input is not focused and not showing suggestions
+        if (urlQuery !== searchQuery && !isInputFocused && !showSuggestions) {
             setSearchQuery(urlQuery);
         }
     }, [searchParams]);
@@ -113,6 +116,37 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Fetch trending products when search bar is focused and empty
+    useEffect(() => {
+        let isCancelled = false;
+
+        const fetchTrendingProducts = async () => {
+            if (searchQuery.length === 0 && showSuggestions && hasFocused) {
+                setIsLoadingTrendingProducts(true);
+                try {
+                    const { data } = await api.get('/search/trending-products?size=6');
+                    if (!isCancelled) {
+                        setTrendingProducts(Array.isArray(data?.hits) ? data.hits : []);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch trending products', error);
+                    if (!isCancelled) setTrendingProducts([]);
+                } finally {
+                    if (!isCancelled) setIsLoadingTrendingProducts(false);
+                }
+            } else {
+                setTrendingProducts([]);
+            }
+        };
+
+        const timer = setTimeout(fetchTrendingProducts, 100);
+
+        return () => {
+            clearTimeout(timer);
+            isCancelled = true;
+        };
+    }, [searchQuery, showSuggestions, hasFocused]);
 
     useEffect(() => {
         let isCancelled = false;
@@ -294,7 +328,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
     };
 
     return (
-        <nav className="sticky top-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <nav className="sticky top-0 z-50 bg-white dark:bg-slate-950 sm:bg-white/95 sm:dark:bg-slate-950/95 sm:backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm" style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
             <div className="container mx-auto px-4">
                 {/* Top Row - Logo, Search (Desktop), Menu */}
                 <div className="flex items-center justify-between h-16 gap-4">
@@ -303,7 +337,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                         <div className="p-2 bg-primary-600 rounded-lg group-hover:scale-105 transition-transform shadow-sm">
                             <ShoppingBagIcon className="w-6 h-6 text-white" />
                         </div>
-                        <span className="hidden sm:inline text-xl font-bold bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
+                        <span className="hidden md:inline text-xl font-bold bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">
                             Marketplace
                         </span>
                     </Link>
@@ -315,6 +349,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                 <div ref={inputContainerRef} className="flex-1 relative group min-w-0">
                                     <input
                                         ref={inputRef}
+                                        id="main-search-input"
                                         type="text"
                                         placeholder="Search for products..."
                                         value={searchQuery}
@@ -336,12 +371,66 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                     {/* Autocomplete Dropdown - Inside input container for proper positioning */}
                                     {showSuggestions && (
                                         <div 
-                                            className="absolute top-full left-0 mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden z-50 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200"
+                                            className="absolute top-full left-0 mt-2 bg-white dark:bg-slate-900 sm:bg-white/95 sm:dark:bg-slate-900/95 sm:backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden z-50 max-h-96 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200"
                                             style={{ 
                                                 width: dropdownWidth ? `${dropdownWidth}px` : (inputRef.current?.offsetWidth ? `${inputRef.current.offsetWidth}px` : inputContainerRef.current?.offsetWidth ? `${inputContainerRef.current.offsetWidth}px` : '100%'),
-                                                maxWidth: inputContainerRef.current?.offsetWidth ? `${inputContainerRef.current.offsetWidth}px` : '100%'
+                                                maxWidth: inputContainerRef.current?.offsetWidth ? `${inputContainerRef.current.offsetWidth}px` : '100%',
+                                                transform: 'translateZ(0)',
+                                                WebkitTransform: 'translateZ(0)'
                                             }}
                                         >
+                                    {/* Trending Products Section - Show when search is empty */}
+                                    {searchQuery.length === 0 && (
+                                        <>
+                                            {isLoadingTrendingProducts ? (
+                                                <div className="px-3 py-3 text-center border-b border-slate-200/50 dark:border-slate-700/50">
+                                                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                                                </div>
+                                            ) : trendingProducts.length > 0 ? (
+                                                <>
+                                                    <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200/50 dark:border-slate-700/50">
+                                                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                            <FireIcon className="w-2.5 h-2.5 text-orange-500" />
+                                                            Trending Products
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex flex-col border-b border-slate-200/50 dark:border-slate-700/50">
+                                                        {trendingProducts.map((product: any) => (
+                                                            <Link
+                                                                key={product.id}
+                                                                href={`/posts/${product.id}`}
+                                                                onClick={() => {
+                                                                    setShowSuggestions(false);
+                                                                    setSearchQuery('');
+                                                                }}
+                                                                className="group flex flex-row gap-2 sm:gap-2.5 p-2 sm:p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-200/30 dark:border-slate-700/30 last:border-0"
+                                                            >
+                                                                {product.images && product.images.length > 0 && (
+                                                                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
+                                                                        <img
+                                                                            src={product.images[0]}
+                                                                            alt={product.title}
+                                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                                    <p className="text-[11px] sm:text-xs font-medium text-slate-900 dark:text-white line-clamp-2 leading-tight mb-0.5 sm:mb-1">
+                                                                        {product.title}
+                                                                    </p>
+                                                                    {product.price !== undefined && (
+                                                                        <p className="text-xs sm:text-sm font-semibold text-primary-600 dark:text-primary-400">
+                                                                            {product.price.toLocaleString()} ALL
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : null}
+                                        </>
+                                    )}
                                     {isLoadingSuggestions ? (
                                         <div className="px-3 py-5 text-center">
                                             <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
@@ -380,25 +469,25 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                                         handleSuggestionClick(suggestion, index, e);
                                                     }}
                                                     onMouseEnter={() => setSelectedIndex(index)}
-                                                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-all duration-150 border-b border-slate-100/50 dark:border-slate-800/50 last:border-b-0 ${index === selectedIndex
-                                                        ? 'bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-800/30'
-                                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-all duration-150 border-b border-slate-100/50 dark:border-slate-800/50 last:border-b-0 group ${index === selectedIndex
+                                                        ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                                                        : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/70'
                                                         }`}
                                                 >
                                                     {suggestion.type === 'history' ? (
-                                                        <svg className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${index === selectedIndex ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                     ) : suggestion.type === 'trending' ? (
-                                                        <FireIcon className="w-3.5 h-3.5 text-orange-500 flex-shrink-0 opacity-80" />
+                                                        <FireIcon className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${index === selectedIndex ? 'text-orange-600' : 'text-orange-500'}`} />
                                                     ) : (
-                                                        <MagnifyingGlassIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0 opacity-70" />
+                                                        <MagnifyingGlassIcon className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${index === selectedIndex ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'}`} />
                                                     )}
-                                                    <span className="text-xs text-slate-700 dark:text-slate-200 flex-1 truncate font-medium">
+                                                    <span className={`text-xs flex-1 truncate font-medium transition-colors ${index === selectedIndex ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                                                         {suggestion.text}
                                                     </span>
                                                     {suggestion.type === 'trending' && suggestion.count && (
-                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 flex-shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                                                             {suggestion.count}
                                                         </span>
                                                     )}
@@ -464,6 +553,12 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                                     <UserCircleIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                                     <span>Profile</span>
                                                 </Link>
+                                                <Link href="/messages" className="dropdown-item text-slate-700 dark:text-slate-200">
+                                                    <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                    <span>Messages</span>
+                                                </Link>
                                                 <Link href="/profile?tab=saved" className="dropdown-item text-slate-700 dark:text-slate-200">
                                                     <BookmarkIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                                     <span>Saved Items</span>
@@ -491,7 +586,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                 </div>
                             </>
                         ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="hidden lg:flex items-center gap-3">
                                 <Link href="/auth/login" className="text-slate-700 dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400 font-medium transition-colors">
                                     Login
                                 </Link>
@@ -502,19 +597,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                         )}
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center gap-4">
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            {isMobileMenuOpen ? (
-                                <XMarkIcon className="w-6 h-6" />
-                            ) : (
-                                <Bars3Icon className="w-6 h-6" />
-                            )}
-                        </button>
-                    </div>
+                    {/* Mobile Menu Button - Removed (use bottom nav instead) */}
                 </div>
 
                 {/* Mobile Search Bar - Always Visible */}
@@ -533,6 +616,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                 <div className="flex-1 relative">
                                     <input
                                         ref={inputRef}
+                                        id="mobile-search-input"
                                         type="text"
                                         placeholder="Search..."
                                         value={searchQuery}
@@ -544,17 +628,74 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                     <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
                                 <button
-                                    type="button"
-                                    onClick={() => router.push('/?showFilters=true')}
-                                    className="px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center transition-all hover:shadow-md"
+                                    type="submit"
+                                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center transition-all hover:shadow-md"
                                 >
-                                    <AdjustmentsHorizontalIcon className="w-5 h-5" />
+                                    <MagnifyingGlassIcon className="w-5 h-5" />
                                 </button>
                             </form>
 
-                            {/* Mobile Autocomplete Dropdown with Glassmorphism */}
+                            {/* Mobile Autocomplete Dropdown - no blur on mobile for better performance */}
                             {showSuggestions && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden z-50 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200">
+                                <div 
+                                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 overflow-hidden z-50 max-h-96 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200"
+                                    style={{ 
+                                        transform: 'translateZ(0)',
+                                        WebkitTransform: 'translateZ(0)'
+                                    }}
+                                >
+                                    {/* Trending Products Section - Show when search is empty */}
+                                    {searchQuery.length === 0 && (
+                                        <>
+                                            {isLoadingTrendingProducts ? (
+                                                <div className="px-3 py-3 text-center border-b border-slate-200/50 dark:border-slate-700/50">
+                                                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                                                </div>
+                                            ) : trendingProducts.length > 0 ? (
+                                                <>
+                                                    <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200/50 dark:border-slate-700/50">
+                                                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                            <FireIcon className="w-2.5 h-2.5 text-orange-500" />
+                                                            Trending Products
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex flex-col border-b border-slate-200/50 dark:border-slate-700/50">
+                                                        {trendingProducts.map((product: any) => (
+                                                            <Link
+                                                                key={product.id}
+                                                                href={`/posts/${product.id}`}
+                                                                onClick={() => {
+                                                                    setShowSuggestions(false);
+                                                                    setSearchQuery('');
+                                                                }}
+                                                                className="group flex flex-row gap-2 sm:gap-2.5 p-2 sm:p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-200/30 dark:border-slate-700/30 last:border-0"
+                                                            >
+                                                                {product.images && product.images.length > 0 && (
+                                                                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
+                                                                        <img
+                                                                            src={product.images[0]}
+                                                                            alt={product.title}
+                                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                                    <p className="text-[11px] sm:text-xs font-medium text-slate-900 dark:text-white line-clamp-2 leading-tight mb-0.5 sm:mb-1">
+                                                                        {product.title}
+                                                                    </p>
+                                                                    {product.price !== undefined && (
+                                                                        <p className="text-xs sm:text-sm font-semibold text-primary-600 dark:text-primary-400">
+                                                                            {product.price.toLocaleString()} ALL
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : null}
+                                        </>
+                                    )}
                                     {isLoadingSuggestions ? (
                                         <div className="px-3 py-5 text-center">
                                             <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
@@ -593,25 +734,25 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                                         handleSuggestionClick(suggestion, index, e);
                                                     }}
                                                     onMouseEnter={() => setSelectedIndex(index)}
-                                                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-all duration-150 border-b border-slate-100/50 dark:border-slate-800/50 last:border-b-0 ${index === selectedIndex
-                                                        ? 'bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-800/30'
-                                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-all duration-150 border-b border-slate-100/50 dark:border-slate-800/50 last:border-b-0 group ${index === selectedIndex
+                                                        ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                                                        : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/70'
                                                         }`}
                                                 >
                                                     {suggestion.type === 'history' ? (
-                                                        <svg className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${index === selectedIndex ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                     ) : suggestion.type === 'trending' ? (
-                                                        <FireIcon className="w-3.5 h-3.5 text-orange-500 flex-shrink-0 opacity-80" />
+                                                        <FireIcon className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${index === selectedIndex ? 'text-orange-600' : 'text-orange-500'}`} />
                                                     ) : (
-                                                        <MagnifyingGlassIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0 opacity-70" />
+                                                        <MagnifyingGlassIcon className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${index === selectedIndex ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'}`} />
                                                     )}
-                                                    <span className="text-xs text-slate-700 dark:text-slate-200 flex-1 truncate font-medium">
+                                                    <span className={`text-xs flex-1 truncate font-medium transition-colors ${index === selectedIndex ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                                                         {suggestion.text}
                                                     </span>
                                                     {suggestion.type === 'trending' && suggestion.count && (
-                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 flex-shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                                                             {suggestion.count}
                                                         </span>
                                                     )}
@@ -630,57 +771,7 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                 )}
             </div>
 
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && (
-                <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                    <div className="px-4 py-3 space-y-3">
-                        {isAuthenticated ? (
-                            <>
-                                <div className="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700">
-                                    <div className="avatar">
-                                        {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-slate-900 dark:text-white">{user?.name}</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
-                                    </div>
-                                </div>
-                                <Link href="/posts/new" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-white">
-                                    <PlusIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                                    <span>Create Post</span>
-                                </Link>
-                                <Link href="/profile" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-white">
-                                    <UserCircleIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                                    <span>Profile</span>
-                                </Link>
-                                <Link href="/profile?tab=saved" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-white">
-                                    <BookmarkIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                                    <span>Saved Items</span>
-                                </Link>
-                                {user?.role === 'ADMIN' && (
-                                    <Link href="/admin" className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-primary-600 dark:text-primary-400">
-                                        <ShieldCheckIcon className="w-5 h-5" />
-                                        <span>Admin Panel</span>
-                                    </Link>
-                                )}
-                                <button onClick={handleLogout} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400">
-                                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                                    <span>Logout</span>
-                                </button>
-                            </>
-                        ) : (
-                            <div className="space-y-2 pt-2">
-                                <Link href="/auth/login" className="block w-full text-center py-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-white font-medium">
-                                    Login
-                                </Link>
-                                <Link href="/auth/register" className="block w-full text-center py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                                    Sign Up
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            {/* Mobile Menu Removed - Use bottom navigation instead */}
         </nav>
     );
 }

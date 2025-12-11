@@ -62,7 +62,7 @@ export function FilterDrawer({ isOpen, onClose, filters, sortBy, onFiltersChange
 
                 <div className="fixed inset-0 overflow-hidden">
                     <div className="absolute inset-0 overflow-hidden">
-                        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-4 lg:pl-10">
                             <Transition.Child
                                 as={Fragment}
                                 enter="transform transition ease-in-out duration-300"
@@ -72,7 +72,7 @@ export function FilterDrawer({ isOpen, onClose, filters, sortBy, onFiltersChange
                                 leaveFrom="translate-x-0"
                                 leaveTo="translate-x-full"
                             >
-                                <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
+                                <Dialog.Panel className="pointer-events-auto w-screen max-w-sm lg:max-w-md">
                                     <div className="flex h-full flex-col bg-white dark:bg-slate-900 shadow-xl">
                                         <div className="flex items-center justify-between px-6 py-6 border-b dark:border-gray-800">
                                             <Dialog.Title className="text-xl font-semibold text-gray-900 dark:text-white">

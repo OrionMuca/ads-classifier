@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Category } from '@/types';
+import { CategoryIcon } from '@/lib/category-icons';
 
 interface CategorySelectorProps {
     categories: Category[];
@@ -63,7 +64,7 @@ export function CategorySelector({ categories, value, onChange, isLoading }: Cat
                     <option value="">Zgjidhni kategorinë kryesore</option>
                     {categories.map((cat) => (
                         <option key={cat.id} value={cat.id}>
-                            {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
+                            {cat.name}
                             {cat.children && cat.children.length > 0 && ` (${cat.children.length} nënkategori)`}
                         </option>
                     ))}
@@ -98,8 +99,8 @@ export function CategorySelector({ categories, value, onChange, isLoading }: Cat
                         </p>
                     )}
                     {parentCategoryData && value && (
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Nënkategori e: {parentCategoryData.icon} {parentCategoryData.name}
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            Nënkategori e: <CategoryIcon categoryName={parentCategoryData.name} className="w-3 h-3" /> {parentCategoryData.name}
                         </p>
                     )}
                 </div>
@@ -111,8 +112,9 @@ export function CategorySelector({ categories, value, onChange, isLoading }: Cat
                     <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
                         Kategoria e zgjedhur:
                     </p>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                        {selectedCategory.icon} {selectedCategory.name}
+                    <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                        <CategoryIcon categoryName={selectedCategory.name} className="w-4 h-4" />
+                        {selectedCategory.name}
                     </p>
                 </div>
             )}

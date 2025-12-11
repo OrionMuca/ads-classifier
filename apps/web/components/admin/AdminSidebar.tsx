@@ -1,3 +1,16 @@
+import {
+    ChartBarIcon,
+    UserGroupIcon,
+    DocumentTextIcon,
+    MegaphoneIcon,
+    PaintBrushIcon,
+    TagIcon,
+    MapPinIcon,
+    Squares2X2Icon,
+    ShieldExclamationIcon,
+    CreditCardIcon,
+} from '@heroicons/react/24/outline';
+
 interface AdminSidebarProps {
     activeView: string;
     onViewChange: (view: string) => void;
@@ -5,45 +18,53 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ activeView, onViewChange }: AdminSidebarProps) {
     const navItems = [
-        { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-        { id: 'users', icon: '👥', label: 'Users' },
-        { id: 'posts', icon: '📝', label: 'Posts' },
-        { id: 'ads', icon: '📢', label: 'Ads' },
-        { id: 'theme', icon: '🎨', label: 'Theme' },
+        { id: 'dashboard', Icon: ChartBarIcon, label: 'Dashboard' },
+        { id: 'users', Icon: UserGroupIcon, label: 'Users' },
+        { id: 'posts', Icon: DocumentTextIcon, label: 'Posts' },
+        { id: 'categories', Icon: TagIcon, label: 'Categories' },
+        { id: 'locations', Icon: MapPinIcon, label: 'Locations' },
+        { id: 'zones', Icon: Squares2X2Icon, label: 'Zones' },
+        { id: 'ads', Icon: MegaphoneIcon, label: 'Ads' },
+        { id: 'blacklist', Icon: ShieldExclamationIcon, label: 'Blacklist' },
+        { id: 'subscriptions', Icon: CreditCardIcon, label: 'Subscriptions' },
+        { id: 'theme', Icon: PaintBrushIcon, label: 'Theme' },
     ];
 
     return (
-        <aside className="w-64 bg-gray-900 text-white flex flex-col h-screen sticky top-0">
+        <aside className="w-64 bg-slate-900 dark:bg-slate-950 text-white flex flex-col h-screen sticky top-0 border-r border-slate-800">
             {/* Header */}
-            <div className="p-6 border-b border-gray-800">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            <div className="p-6 border-b border-slate-800">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-indigo-500 bg-clip-text text-transparent">
                     Admin Panel
                 </h1>
-                <p className="text-xs text-gray-400 mt-1">Marketplace Management</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Marketplace Management</p>
             </div>
 
             {/* Navigation */}
             <nav className="flex-1 p-4">
-                {navItems.map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => onViewChange(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${activeView === item.id
-                                ? 'bg-blue-600 text-white shadow-lg'
-                                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                            }`}
-                    >
-                        <span className="text-xl">{item.icon}</span>
-                        <span className="font-medium">{item.label}</span>
-                    </button>
-                ))}
+                {navItems.map((item) => {
+                    const Icon = item.Icon;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => onViewChange(item.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${activeView === item.id
+                                    ? 'bg-primary-600 dark:bg-primary-700 text-white shadow-lg'
+                                    : 'text-slate-300 dark:text-slate-400 hover:bg-slate-800 dark:hover:bg-slate-900 hover:text-white'
+                                }`}
+                        >
+                            <Icon className="w-5 h-5" />
+                            <span className="font-medium">{item.label}</span>
+                        </button>
+                    );
+                })}
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-800">
+            <div className="p-4 border-t border-slate-800">
                 <a
                     href="/"
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-white transition-colors"
                 >
                     <span>←</span>
                     <span className="text-sm">Back to Marketplace</span>

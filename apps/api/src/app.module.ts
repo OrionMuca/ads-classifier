@@ -14,11 +14,17 @@ import { UploadModule } from './upload/upload.module';
 import { ZonesModule } from './zones/zones.module';
 import { AdsModule } from './ads/ads.module';
 import { ThemeModule } from './theme/theme.module';
+import { ModerationModule } from './moderation/moderation.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    ModerationModule,
+    SubscriptionModule,
+    MessagesModule,
     UsersModule,
     PostsModule,
     AuthModule,

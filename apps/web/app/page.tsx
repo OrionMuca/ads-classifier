@@ -6,6 +6,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Post } from '@/types';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { FilterDrawer } from '@/components/FilterDrawer';
 import { ProductCard } from '@/components/ProductCard';
 import { AdCard } from '@/components/AdCard';
@@ -32,6 +33,8 @@ export default function Home() {
   });
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchStartTime, setSearchStartTime] = useState<number | null>(null);
+  const [clickedPostIds, setClickedPostIds] = useState<Set<string>>(new Set());
   
   // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -54,7 +57,35 @@ export default function Home() {
     const newSearch = urlQuery || '';
     // Always update, even if same value, to trigger refetch
     setSearch(newSearch);
+    
+    // Reset interaction tracking when search changes
+    setSearchStartTime(Date.now());
+    setClickedPostIds(new Set());
   }, [urlQuery]);
+
+  // Track search interaction when component unmounts or search changes
+  useEffect(() => {
+    return () => {
+      // Send interaction data when leaving the page
+      if (searchStartTime && (urlQuery || filters.categoryId || filters.locationId)) {
+        const dwellTime = Math.floor((Date.now() - searchStartTime) / 1000); // in seconds
+        const clickedIds = Array.from(clickedPostIds);
+        
+        if (dwellTime > 0 || clickedIds.length > 0) {
+          // Send interaction data asynchronously (don't block navigation)
+          api.post('/search/interaction', {
+            query: urlQuery || '',
+            categoryId: filters.categoryId || undefined,
+            locationId: filters.locationId || undefined,
+            clickedResults: clickedIds,
+            dwellTime,
+          }).catch(() => {
+            // Silently fail - interaction tracking is not critical
+          });
+        }
+      }
+    };
+  }, [searchStartTime, clickedPostIds, urlQuery, filters.categoryId, filters.locationId]);
 
   // Open filter drawer if showFilters param is in URL
   useEffect(() => {
@@ -97,13 +128,22 @@ export default function Home() {
         const searchUrl = `/search?${params.toString()}`;
         
         const response = await api.get(searchUrl);
+        
+        // Enhanced logging for debugging
+        const responseData = response.data || {};
         console.log('✅ Search response:', {
-          total: response.data?.total,
-          hitsCount: response.data?.hits?.length,
-          firstHit: response.data?.hits?.[0],
+          total: responseData.total,
+          hitsCount: responseData.hits?.length || 0,
+          hasHits: !!responseData.hits,
+          firstHit: responseData.hits?.[0],
+          url: searchUrl,
         });
         
-        return response.data;
+        // Ensure we always return a valid structure
+        return {
+          hits: responseData.hits || [],
+          total: responseData.total || 0,
+        };
       } catch (err: any) {
         console.error('❌ Search error:', {
           message: err.message,
@@ -112,7 +152,8 @@ export default function Home() {
           url: err.config?.url,
           baseURL: err.config?.baseURL,
         });
-        throw err;
+        // Return empty result instead of throwing to prevent page crash
+        return { hits: [], total: 0 };
       }
     },
     getNextPageParam: (lastPage) => {
@@ -121,13 +162,21 @@ export default function Home() {
       return lastItem?.sort || undefined;
     },
     initialPageParam: undefined,
-    staleTime: 0, // Always refetch when query changes
-    refetchOnMount: true, // Always refetch when component mounts
+    staleTime: 30 * 1000, // Cache for 30 seconds (reduces unnecessary refetches)
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     enabled: true, // Always enabled
     retry: 2, // Retry failed requests
   });
 
-  const allPosts = data?.pages.flatMap((page) => page.hits) || [];
+  // Safely extract posts from all pages
+  const allPosts = useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap((page) => {
+      if (!page || !page.hits) return [];
+      return page.hits.filter((hit: any) => hit && hit.id); // Filter out invalid hits
+    });
+  }, [data]);
 
   // Fetch active ads
   const { data: ads } = useQuery({
@@ -146,46 +195,101 @@ export default function Home() {
     retry: 2,
   });
 
-  // Merge posts and ads based on position
+  // Merge posts and ads with smart distribution (like Facebook Marketplace)
   const itemsWithAds = useMemo(() => {
     if (!ads || ads.length === 0) {
       return allPosts.map((post: any) => ({ type: 'post', data: post }));
     }
 
-    // Sort ads by position
-    const sortedAds = [...ads].sort((a, b) => a.position - b.position);
+    // Separate banner ads and card ads
+    const bannerAds = ads.filter((ad: any) => ad.layout === 'BANNER' && ad.active);
+    const cardAds = ads.filter((ad: any) => ad.layout === 'CARD' && ad.active);
+    
+    // Shuffle card ads for variety (but keep banner order)
+    const shuffledCardAds = [...cardAds].sort(() => Math.random() - 0.5);
+    
     const result: Array<{ type: 'post' | 'ad'; data: any }> = [];
-    const usedAdIndices = new Set<number>();
-
-    // Track which ads have been inserted
-    for (let i = 0; i < allPosts.length; i++) {
-      // Check if we should insert an ad at this position
-      for (let j = 0; j < sortedAds.length; j++) {
-        if (usedAdIndices.has(j)) continue;
-
-        const ad = sortedAds[j];
-        // Insert ad at the beginning (position 0)
-        if (ad.position === 0 && i === 0) {
-          result.push({ type: 'ad', data: ad });
-          usedAdIndices.add(j);
-        }
-        // Insert ad after specified number of posts
-        else if (ad.position > 0 && i === ad.position) {
-          result.push({ type: 'ad', data: ad });
-          usedAdIndices.add(j);
-        }
+    let cardAdIndex = 0;
+    let bannerAdIndex = 0;
+    
+    // Smart ad insertion: use adaptive intervals based on post count
+    // For few posts: insert ads more frequently to avoid grouping at end
+    // For many posts: use longer intervals for natural distribution
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    let AD_INTERVAL_MIN: number;
+    let AD_INTERVAL_MAX: number;
+    
+    if (allPosts.length <= 10) {
+      // Few posts: insert ads every 3-5 posts to ensure distribution
+      AD_INTERVAL_MIN = 3;
+      AD_INTERVAL_MAX = 5;
+    } else if (allPosts.length <= 30) {
+      // Medium posts: insert ads every 5-7 posts
+      AD_INTERVAL_MIN = isMobile ? 6 : 5;
+      AD_INTERVAL_MAX = isMobile ? 9 : 7;
+    } else {
+      // Many posts: insert ads every 6-10 posts (longer on mobile)
+      AD_INTERVAL_MIN = isMobile ? 8 : 6;
+      AD_INTERVAL_MAX = isMobile ? 12 : 10;
+    }
+    
+    let postsSinceLastAd = 0;
+    let nextAdInterval = AD_INTERVAL_MIN + Math.floor(Math.random() * (AD_INTERVAL_MAX - AD_INTERVAL_MIN + 1));
+    
+    // Calculate banner ad positions (only if we have enough posts)
+    const bannerPositions: number[] = [];
+    if (allPosts.length > 10) {
+      bannerPositions.push(0); // Beginning
+      if (allPosts.length > 20) {
+        bannerPositions.push(Math.floor(allPosts.length / 3)); // First third
       }
-
-      // Add the post
-      result.push({ type: 'post', data: allPosts[i] });
+      if (allPosts.length > 30) {
+        bannerPositions.push(Math.floor(allPosts.length * 2 / 3)); // Second third
+      }
+    }
+    const usedBannerPositions = new Set<number>();
+    
+    // Calculate max ads to insert (ensure we don't have more ads than posts)
+    const maxCardAds = Math.min(
+      shuffledCardAds.length,
+      Math.max(1, Math.floor(allPosts.length / AD_INTERVAL_MIN)) // At least 1 ad if we have posts
+    );
+    
+    // Process posts and insert ads naturally
+    for (let postIndex = 0; postIndex < allPosts.length; postIndex++) {
+      // Check if we should insert a banner ad at this position
+      const shouldInsertBanner = bannerPositions.includes(postIndex) && 
+                                 !usedBannerPositions.has(postIndex) &&
+                                 bannerAdIndex < bannerAds.length;
+      
+      if (shouldInsertBanner) {
+        result.push({ type: 'ad', data: bannerAds[bannerAdIndex] });
+        bannerAdIndex++;
+        usedBannerPositions.add(postIndex);
+        // Reset counter after banner (banner counts as content break)
+        postsSinceLastAd = 0;
+      }
+      
+      // Insert card ad at regular intervals (but not if we just inserted a banner)
+      const shouldInsertCardAd = !shouldInsertBanner && 
+                                 cardAdIndex < maxCardAds &&
+                                 postsSinceLastAd >= nextAdInterval;
+      
+      if (shouldInsertCardAd) {
+        result.push({ type: 'ad', data: shuffledCardAds[cardAdIndex] });
+        cardAdIndex++;
+        postsSinceLastAd = 0;
+        // Randomize next interval for natural distribution
+        nextAdInterval = AD_INTERVAL_MIN + Math.floor(Math.random() * (AD_INTERVAL_MAX - AD_INTERVAL_MIN + 1));
+      }
+      
+      // Always add the post
+      result.push({ type: 'post', data: allPosts[postIndex] });
+      postsSinceLastAd++;
     }
 
-    // Add any remaining ads that should appear after all posts
-    for (let j = 0; j < sortedAds.length; j++) {
-      if (!usedAdIndices.has(j) && sortedAds[j].position >= allPosts.length) {
-        result.push({ type: 'ad', data: sortedAds[j] });
-      }
-    }
+    // Don't add remaining ads at the end - this was causing the grouping issue
+    // Ads should be naturally distributed throughout, not bunched at the end
 
     return result;
   }, [allPosts, ads]);
@@ -321,8 +425,8 @@ export default function Home() {
                         key={`${viewMode}-${groupIndex}`}
                         className={
                           isListView
-                            ? 'space-y-4'
-                            : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
+                            ? 'space-y-3'
+                            : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'
                         }
                       >
                         {group.items.map((item, itemIndex) => {
@@ -332,12 +436,18 @@ export default function Home() {
                             return <AdCard key={`ad-${item.data.id}-${itemIndex}`} ad={item.data} />;
                           }
                           return (
-                            <ProductCard
+                            <div
                               key={item.data.id}
-                              post={item.data}
-                              showSaveButton={true}
-                              viewMode={viewMode}
-                            />
+                              onClick={() => {
+                                setClickedPostIds((prev) => new Set([...prev, item.data.id]));
+                              }}
+                            >
+                              <ProductCard
+                                post={item.data}
+                                showSaveButton={true}
+                                viewMode={viewMode}
+                              />
+                            </div>
                           );
                         })}
                       </div>
@@ -370,6 +480,17 @@ export default function Home() {
         onFiltersChange={setFilters}
         onSortChange={setSortBy}
       />
+
+      {/* Floating Filter Button - Mobile Only */}
+      <button
+        onClick={() => setIsFilterOpen(true)}
+        className="lg:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+        aria-label="Open filters"
+      >
+        <AdjustmentsHorizontalIcon className="w-6 h-6" />
+      </button>
+
+      <Footer />
     </>
   );
 }

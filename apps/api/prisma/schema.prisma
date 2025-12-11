@@ -22,6 +22,19 @@ enum PostStatus {
   DELETED
 }
 
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -31,6 +44,16 @@ model User {
   avatar       String?
   role         Role     @default(USER)
   refreshToken String?
+  
+  // User status
+  isActive      Boolean   @default(true)
+  deactivatedAt DateTime?
+  
+  // Subscription
+  subscription         SubscriptionPlan   @default(FREE)
+  subscriptionStatus   SubscriptionStatus @default(ACTIVE)
+  subscriptionEndsAt   DateTime?
+  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -39,6 +62,10 @@ model User {
   sentMessages  Message[]                 @relation("SentMessages")
   conversations ConversationParticipant[]
   profile       UserProfile?
+  subscriptions SubscriptionHistory[]
+  
+  @@index([isActive])
+  @@index([subscription])
 }
 
 model UserProfile {
@@ -275,4 +302,44 @@ model ThemeConfig {
   updatedAt DateTime @updatedAt
 
   @@index([isActive])
+}
+
+model BlacklistWord {
+  id        String   @id @default(uuid())
+  word      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([word])
+}
+
+model SubscriptionHistory {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan
+  status      SubscriptionStatus
+  requestedAt DateTime           @default(now())
+  approvedAt  DateTime?
+  approvedBy  String?            // Admin user ID
+  expiresAt   DateTime?
+  notes       String?            // Admin notes or payment proof
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PlanConfig {
+  id               String           @id @default(uuid())
+  plan             SubscriptionPlan @unique
+  name             String
+  price            Decimal
+  maxPosts         Int
+  maxImagesPerPost Int
+  features         String[]
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }

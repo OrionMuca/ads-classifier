@@ -57,15 +57,23 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setTheme] = useState<Theme | null>(null);
 
-    // Fetch active theme
+    // Fetch active theme (non-blocking - fails gracefully)
     const { data: activeTheme, isLoading } = useQuery({
         queryKey: ['active-theme'],
         queryFn: async () => {
-            const { data } = await api.get('/theme/active');
-            return data;
+            try {
+                const { data } = await api.get('/theme/active');
+                return data;
+            } catch (error) {
+                // Fail gracefully - return null if theme fetch fails
+                console.warn('Failed to fetch theme, using defaults:', error);
+                return null;
+            }
         },
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false, // Don't refetch on window focus (prevents unnecessary refreshes)
+        retry: 1, // Only retry once
+        retryDelay: 1000, // Wait 1 second before retry
     });
 
     // Apply theme to CSS variables

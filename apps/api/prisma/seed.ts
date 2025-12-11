@@ -16,16 +16,49 @@ async function main() {
     // Seed admin user
     await prisma.user.upsert({
         where: { email: 'admin@marketplace.com' },
-        update: {},
+        update: {
+            password: '$2b$10$gNlJ/2sPiL3xhp6fSnkRzuBuFeJ4eaXE0sh.QHEtjExvTBXG6pb2i', // admin123
+            role: 'ADMIN',
+            name: 'Admin User',
+            phone: '+355691234567',
+        },
         create: {
             id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
             email: 'admin@marketplace.com',
-            password: '$2b$10$vdkEvVmigMzyI.OdEwHSCuSqQkFccYCAgx.VUsqsUOTYjGLjmIUqq', // admin123
+            password: '$2b$10$gNlJ/2sPiL3xhp6fSnkRzuBuFeJ4eaXE0sh.QHEtjExvTBXG6pb2i', // admin123
             name: 'Admin User',
             phone: '+355691234567',
             role: 'ADMIN',
         },
     });
+
+    // Seed regular test user
+    await prisma.user.upsert({
+        where: { email: 'user@marketplace.com' },
+        update: {
+            password: '$2b$10$gNlJ/2sPiL3xhp6fSnkRzuBuFeJ4eaXE0sh.QHEtjExvTBXG6pb2i', // admin123 (same password for testing)
+            role: 'USER',
+            name: 'Test User',
+            phone: '+355697654321',
+        },
+        create: {
+            id: 'b1ffcd99-9c0b-4ef8-bb6d-6bb9bd380a22',
+            email: 'user@marketplace.com',
+            password: '$2b$10$gNlJ/2sPiL3xhp6fSnkRzuBuFeJ4eaXE0sh.QHEtjExvTBXG6pb2i', // admin123
+            name: 'Test User',
+            phone: '+355697654321',
+            role: 'USER',
+            profile: {
+                create: {
+                    whatsapp: '+355697654321',
+                    instagram: '@testuser',
+                    bio: 'Këtu për të blerë dhe shitur produkte cilësore.',
+                }
+            }
+        },
+    });
+
+    console.log('  ✅ Seeded admin and test user');
 
     // Seed main categories
     const elektronike = await prisma.category.upsert({
@@ -230,6 +263,74 @@ async function main() {
     }
 
     console.log(`  ✅ Seeded ${sampleAds.length} ads\n`);
+
+    // Step 5: Seed subscription plan configurations
+    console.log('💳 Step 5: Seeding subscription plans...');
+    
+    await prisma.planConfig.upsert({
+        where: { plan: 'FREE' },
+        update: {
+            name: 'Plan Falas',
+            price: 0,
+            maxPosts: 3,
+            maxImagesPerPost: 3,
+            features: ['3 postime aktive', '3 foto për postim', 'Mbështetje bazike'],
+            isActive: true,
+        },
+        create: {
+            plan: 'FREE',
+            name: 'Plan Falas',
+            price: 0,
+            maxPosts: 3,
+            maxImagesPerPost: 3,
+            features: ['3 postime aktive', '3 foto për postim', 'Mbështetje bazike'],
+            isActive: true,
+        },
+    });
+
+    await prisma.planConfig.upsert({
+        where: { plan: 'BASIC' },
+        update: {
+            name: 'Plan Bazik',
+            price: 500,
+            maxPosts: 10,
+            maxImagesPerPost: 5,
+            features: ['10 postime aktive', '5 foto për postim', 'Mbështetje prioritare', '30 ditë kohëzgjatje'],
+            isActive: true,
+        },
+        create: {
+            plan: 'BASIC',
+            name: 'Plan Bazik',
+            price: 500,
+            maxPosts: 10,
+            maxImagesPerPost: 5,
+            features: ['10 postime aktive', '5 foto për postim', 'Mbështetje prioritare', '30 ditë kohëzgjatje'],
+            isActive: true,
+        },
+    });
+
+    await prisma.planConfig.upsert({
+        where: { plan: 'PREMIUM' },
+        update: {
+            name: 'Plan Premium',
+            price: 1500,
+            maxPosts: 50,
+            maxImagesPerPost: 10,
+            features: ['50 postime aktive', '10 foto për postim', 'Mbështetje 24/7', '30 ditë kohëzgjatje', 'Përparësi në rezultatet e kërkimit'],
+            isActive: true,
+        },
+        create: {
+            plan: 'PREMIUM',
+            name: 'Plan Premium',
+            price: 1500,
+            maxPosts: 50,
+            maxImagesPerPost: 10,
+            features: ['50 postime aktive', '10 foto për postim', 'Mbështetje 24/7', '30 ditë kohëzgjatje', 'Përparësi në rezultatet e kërkimit'],
+            isActive: true,
+        },
+    });
+
+    console.log(`  ✅ Seeded 3 subscription plans\n`);
 
     console.log('🎉 Full database seed completed successfully!');
 }

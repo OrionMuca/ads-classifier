@@ -40,13 +40,14 @@ export function AdCard({ ad }: AdCardProps) {
                     src={ad.image}
                     alt={ad.title}
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                 />
-                <div className="absolute top-2 right-2 bg-primary-600 text-white text-[10px] px-2 py-1 rounded-full font-semibold">
+                <div className="absolute top-2 right-2 bg-primary-600/90 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide">
                     Ad
                 </div>
             </div>
-            <div className="p-3">
-                <h3 className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white line-clamp-2">
+            <div className="p-2.5 sm:p-3">
+                <h3 className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white line-clamp-2 leading-tight">
                     {ad.title}
                 </h3>
             </div>

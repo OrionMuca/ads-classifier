@@ -130,19 +130,21 @@ export function HeroSection() {
 
     return (
         <div
-            className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800"
+            className="relative h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
         >
-            {/* Background Image */}
-            <div
-                className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-                style={{
-                    backgroundImage: `url(${currentItem.image})`,
-                    opacity: 0.3,
-                }}
-            >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-900/80 via-primary-800/70 to-primary-600/80" />
+            {/* Background Image - with hardware acceleration fix for mobile */}
+            <div className="absolute inset-0 transition-opacity duration-1000" style={{ transform: 'translateZ(0)', willChange: 'opacity' }}>
+                <img
+                    src={currentItem.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: 0.3, transform: 'translateZ(0)' }}
+                    loading="eager"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-900/80 via-primary-800/70 to-primary-600/80" style={{ transform: 'translateZ(0)' }} />
             </div>
 
             {/* Content */}
@@ -151,24 +153,24 @@ export function HeroSection() {
                     <div className="max-w-2xl">
                         {/* Badge */}
                         {currentItem.type === 'ad' && (
-                            <div className="inline-block mb-4 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold text-white border border-white/30">
+                            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/30 rounded-full text-xs sm:text-sm font-semibold text-white border border-white/40">
                                 📢 Reklamë
                             </div>
                         )}
                         {currentItem.type === 'post' && currentItem.category && (
-                            <div className="inline-block mb-4 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold text-white border border-white/30">
+                            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/30 rounded-full text-xs sm:text-sm font-semibold text-white border border-white/40">
                                 {currentItem.category}
                             </div>
                         )}
 
                         {/* Title */}
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-lg">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 drop-shadow-2xl leading-tight">
                             {currentItem.title}
                         </h1>
 
                         {/* Price (for posts) */}
                         {currentItem.type === 'post' && currentItem.price && (
-                            <p className="text-xl sm:text-2xl md:text-3xl text-primary-100 mb-6 font-semibold">
+                            <p className="text-lg sm:text-xl md:text-2xl text-primary-100 mb-4 sm:mb-6 font-semibold drop-shadow-lg">
                                 €{Number(currentItem.price).toLocaleString()}
                             </p>
                         )}
@@ -192,17 +194,17 @@ export function HeroSection() {
                 <>
                     <button
                         onClick={goToPrevious}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full p-3 transition-all"
+                        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/40 rounded-full p-2 sm:p-3 transition-all shadow-lg"
                         aria-label="Previous slide"
                     >
-                        <ChevronLeftIcon className="w-6 h-6 text-white" />
+                        <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </button>
                     <button
                         onClick={goToNext}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full p-3 transition-all"
+                        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/40 rounded-full p-2 sm:p-3 transition-all shadow-lg"
                         aria-label="Next slide"
                     >
-                        <ChevronRightIcon className="w-6 h-6 text-white" />
+                        <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </button>
                 </>
             )}

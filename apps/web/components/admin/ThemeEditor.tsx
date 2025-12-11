@@ -86,13 +86,19 @@ export function ThemeEditor() {
         },
     });
 
-    // Fetch active theme
+    // Fetch active theme (non-blocking)
     const { data: activeTheme } = useQuery({
         queryKey: ['active-theme'],
         queryFn: async () => {
-            const { data } = await api.get('/theme/active');
-            return data;
+            try {
+                const { data } = await api.get('/theme/active');
+                return data;
+            } catch (error) {
+                console.warn('Failed to fetch active theme:', error);
+                return null;
+            }
         },
+        retry: 1,
     });
 
     // Create theme mutation

@@ -33,16 +33,25 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
             {/* Main Image Display */}
-            <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden group">
-                <Image
-                    src={images[selectedIndex]}
-                    alt={`${title} - Image ${selectedIndex + 1}`}
-                    fill
-                    className="object-cover"
-                    priority={selectedIndex === 0}
-                />
+            <div className="relative w-full bg-slate-800 dark:bg-slate-900 rounded-xl overflow-hidden group" style={{ aspectRatio: '1 / 1', minHeight: '400px', width: '100%' }}>
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                    {/* Use regular img for better aspect ratio handling */}
+                    <img
+                        src={images[selectedIndex]}
+                        alt={`${title} - Image ${selectedIndex + 1}`}
+                        className="max-w-full max-h-full object-contain"
+                        style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '100%',
+                            width: 'auto',
+                            height: 'auto',
+                            display: 'block'
+                        }}
+                        loading={selectedIndex === 0 ? 'eager' : 'lazy'}
+                    />
+                </div>
 
                 {/* Navigation Arrows */}
                 {images.length > 1 && (

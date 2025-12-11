@@ -1,5 +1,7 @@
+import { ReactNode } from 'react';
+
 interface StatCardProps {
-    icon: string;
+    icon: ReactNode;
     title: string;
     value: string | number;
     trend?: string;
@@ -15,15 +17,17 @@ export function StatCard({ icon, title, value, trend, trendUp }: StatCardProps) 
                         {title}
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        {value.toLocaleString()}
+                        {typeof value === 'number' ? value.toLocaleString() : value}
                     </p>
                     {trend && (
-                        <p className={`text - xs font - medium ${trendUp !== false ? 'text-green-600' : 'text-red-600'} `}>
+                        <p className={`text-xs font-medium ${trendUp !== false ? 'text-green-600' : 'text-red-600'}`}>
                             {trend}
                         </p>
                     )}
                 </div>
-                <div className="text-4xl opacity-20">{icon}</div>
+                <div className="opacity-20 text-primary-600 dark:text-primary-400">
+                    {icon}
+                </div>
             </div>
         </div>
     );
