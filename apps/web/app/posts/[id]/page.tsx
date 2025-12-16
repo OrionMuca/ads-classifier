@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, Suspense } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PencilIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import api from '@/lib/api';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -14,13 +14,18 @@ import { ContactSellerModal } from '@/components/ContactSellerModal';
 import { RelatedProducts } from '@/components/RelatedProducts';
 import { CategoryIcon } from '@/lib/category-icons';
 import { MapPinIcon } from '@heroicons/react/24/outline';
+import { useToast } from '@/components/admin/Toast';
+
+export const dynamic = 'force-dynamic';
 
 export default function PostPage() {
     const params = useParams();
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const postId = params.id as string;
     const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+    const [isCreatingConversation, setIsCreatingConversation] = useState(false);
 
     const { data: post, isLoading, error } = useQuery({
         queryKey: ['post', postId],
@@ -36,15 +41,54 @@ export default function PostPage() {
                 throw error;
             }
         },
+        enabled: !!postId, // Only run if postId exists
         retry: 1, // Only retry once
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
         refetchOnWindowFocus: false, // Don't refetch on window focus
+        refetchOnMount: false, // Don't refetch on mount if data is fresh
+        refetchOnReconnect: false, // Don't refetch on reconnect
     });
+
+    // Mutation to create/get conversation
+    const createConversationMutation = useMutation({
+        mutationFn: async (postId: string) => {
+            const { data } = await api.post('/messages/conversations', {
+                postId,
+                participantIds: [post.userId], // Seller ID
+            });
+            return data;
+        },
+        onSuccess: (conversation) => {
+            router.push(`/messages/${conversation.id}`);
+        },
+        onError: (error: any) => {
+            console.error('Error creating conversation:', error);
+            showToast(error.response?.data?.message || 'Gabim në krijimin e bisedës. Ju lutemi provoni përsëri.', 'error');
+            setIsCreatingConversation(false);
+        },
+    });
+
+    const handleChatWithSeller = async () => {
+        if (!isAuthenticated) {
+            router.push(`/auth/login?redirect=/posts/${postId}`);
+            return;
+        }
+
+        if (!post?.userId) {
+            showToast('Informacioni i shitësit nuk është i disponueshëm.', 'error');
+            return;
+        }
+
+        setIsCreatingConversation(true);
+        createConversationMutation.mutate(postId);
+    };
 
     if (isLoading) {
         return (
             <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950">
-                <Navbar />
+                <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                    <Navbar />
+                </Suspense>
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
                 </div>
@@ -55,7 +99,9 @@ export default function PostPage() {
     if (error || (!isLoading && !post)) {
         return (
             <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950">
-                <Navbar />
+                <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                    <Navbar />
+                </Suspense>
                 <div className="max-w-7xl mx-auto px-4 py-12 text-center">
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Post not found</h1>
                     <p className="text-slate-600 dark:text-slate-400 mb-6">
@@ -74,7 +120,9 @@ export default function PostPage() {
 
     return (
         <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950">
-            <Navbar />
+            <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                <Navbar />
+            </Suspense>
 
             <main className="max-w-7xl mx-auto px-4 py-4 sm:py-8 w-full pb-20 lg:pb-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
@@ -135,14 +183,27 @@ export default function PostPage() {
                             </p>
                         </div>
 
-                        {/* Show contact button only for other users' posts */}
+                        {/* Show contact buttons only for other users' posts */}
                         {user?.id !== post.userId && (
-                            <button
-                                onClick={() => setIsContactModalOpen(true)}
-                                className="w-full btn-primary py-4 text-lg text-white"
-                            >
-                                Contact Seller
-                            </button>
+                            <div className="space-y-3">
+                                {/* Primary: Chat with seller (in-app) */}
+                                <button
+                                    onClick={handleChatWithSeller}
+                                    disabled={isCreatingConversation}
+                                    className="w-full btn-primary py-4 text-lg text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                                    {isCreatingConversation ? 'Duke hapur bisedën...' : 'Chat me Shitësin'}
+                                </button>
+
+                                {/* Secondary: More contact options (external) */}
+                                <button
+                                    onClick={() => setIsContactModalOpen(true)}
+                                    className="w-full py-3 px-4 text-base font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Më shumë opsione kontakti
+                                </button>
+                            </div>
                         )}
 
                         {/* Show edit button for own posts */}

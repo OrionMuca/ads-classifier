@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from './api';
-import { Category, Location, Post } from '../types';
+import { Category, Location, Post, Zone } from '../types';
 
 // Fetch all categories
 export function useCategories() {

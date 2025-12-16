@@ -44,9 +44,7 @@ export function getSessionId(): string {
         
         return sessionId;
     } catch (error) {
-        // Handle quota exceeded or other storage errors
-        console.warn('Failed to access sessionStorage, using localStorage fallback:', error);
-        
+        // Handle quota exceeded or other storage errors - fallback to localStorage
         try {
             let sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
             if (!sessionId) {
@@ -55,7 +53,6 @@ export function getSessionId(): string {
             }
             return sessionId;
         } catch (fallbackError) {
-            console.error('Failed to access localStorage:', fallbackError);
             // Return a temporary session ID that won't persist
             return generateUUID();
         }
@@ -74,7 +71,7 @@ export function clearSessionId(): void {
         sessionStorage.removeItem(SESSION_ID_KEY);
         localStorage.removeItem(SESSION_STORAGE_KEY);
     } catch (error) {
-        console.warn('Failed to clear session ID:', error);
+        // Silently fail - clearing session ID is not critical
     }
 }
 
@@ -103,7 +100,6 @@ export function getSessionIdForMigration(): string | null {
     try {
         return sessionStorage.getItem(SESSION_ID_KEY) || localStorage.getItem(SESSION_STORAGE_KEY);
     } catch (error) {
-        console.warn('Failed to get session ID for migration:', error);
         return null;
     }
 }

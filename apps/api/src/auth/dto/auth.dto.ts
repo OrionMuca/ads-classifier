@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, Matches } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, Matches, IsBoolean } from 'class-validator';
 
 export class RegisterDto {
     @IsEmail()
@@ -17,6 +17,12 @@ export class RegisterDto {
         message: 'Phone must be a valid Albanian number (+355XXXXXXXX or 06XXXXXXXX)',
     })
     phone: string;
+
+    @IsBoolean()
+    acceptedTerms: boolean;
+
+    @IsBoolean()
+    acceptedPrivacy: boolean;
 }
 
 export class LoginDto {

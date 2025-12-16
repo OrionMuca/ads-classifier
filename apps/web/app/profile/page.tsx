@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Dialog, Transition } from '@headlessui/react';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import api from '@/lib/api';
 import { Navbar } from '@/components/Navbar';
 import { MobileHeader } from '@/components/MobileHeader';
@@ -12,9 +14,11 @@ import { Footer } from '@/components/Footer';
 import { DocumentTextIcon, HeartIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { Toast, useToast } from '@/components/admin/Toast';
 
+export const dynamic = 'force-dynamic';
+
 type Tab = 'profile' | 'posts' | 'saved';
 
-export default function ProfilePage() {
+function ProfilePageContent() {
     const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -23,11 +27,16 @@ export default function ProfilePage() {
     const [activeTab, setActiveTab] = useState<Tab>('profile');
     const [isEditing, setIsEditing] = useState(false);
 
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
     const handleLogout = () => {
-        if (confirm('A jeni të sigurt që dëshironi të dilni?')) {
-            logout();
-            router.push('/');
-        }
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutConfirm(false);
+        logout();
+        router.push('/');
     };
 
     // Form state
@@ -522,7 +531,83 @@ export default function ProfilePage() {
                 />
             )}
 
+            {/* Logout Confirmation Modal */}
+            <Transition appear show={showLogoutConfirm} as={Fragment}>
+                <Dialog as="div" className="relative z-50" onClose={() => setShowLogoutConfirm(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-black/50" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                            <ExclamationTriangleIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <Dialog.Title
+                                                as="h3"
+                                                className="text-lg font-semibold text-slate-900 dark:text-white mb-2"
+                                            >
+                                                Dil nga Llogaria
+                                            </Dialog.Title>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                                                A jeni të sigurt që dëshironi të dilni? Do të duhet të identifikoheni përsëri për të aksesuar llogarinë tuaj.
+                                            </p>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={confirmLogout}
+                                                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                                                >
+                                                    Po, Dil
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowLogoutConfirm(false)}
+                                                    className="flex-1 px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg font-medium transition-colors"
+                                                >
+                                                    Anulo
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
             <Footer />
         </>
+    );
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+                <div className="animate-pulse">Loading...</div>
+            </div>
+        }>
+            <ProfilePageContent />
+        </Suspense>
     );
 }

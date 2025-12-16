@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +19,22 @@ import {
     DocumentTextIcon,
     CalendarDaysIcon,
     ChartBarIcon,
+    EyeIcon,
+    CurrencyDollarIcon,
+    ChatBubbleLeftRightIcon,
+    EnvelopeIcon,
+    ArrowTrendingUpIcon,
+    ArrowTrendingDownIcon,
+    CheckCircleIcon,
+    XCircleIcon,
+    BuildingStorefrontIcon,
+    MapPinIcon,
+    TagIcon,
+    CreditCardIcon,
 } from '@heroicons/react/24/outline';
+
+// Mark page as dynamic to avoid static generation issues with useSearchParams
+export const dynamic = 'force-dynamic';
 
 export default function AdminDashboard() {
     const { user, isLoading: authLoading } = useAuth();
@@ -48,31 +63,7 @@ export default function AdminDashboard() {
     const [bulkBlacklistWords, setBulkBlacklistWords] = useState('');
     const [showBulkBlacklistModal, setShowBulkBlacklistModal] = useState(false);
 
-    // Show loading while auth is loading
-    if (authLoading) {
-        return (
-            <>
-                <Navbar />
-                <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-                    <div className="animate-pulse">Loading...</div>
-                </div>
-            </>
-        );
-    }
-
-    // Redirect if not admin
-    if (user && user.role !== 'ADMIN') {
-        router.push('/');
-        return null;
-    }
-
-    // Redirect to login if not authenticated
-    if (!user) {
-        router.push('/auth/login');
-        return null;
-    }
-
-    // Fetch statistics
+    // Fetch statistics - must be called before any conditional returns
     const { data: stats } = useQuery({
         queryKey: ['admin-stats'],
         queryFn: async () => {
@@ -519,20 +510,50 @@ export default function AdminDashboard() {
         }
     };
 
+    // Conditional rendering AFTER all hooks are called
+    // Show loading while auth is loading
+    if (authLoading) {
+        return (
+            <>
+                <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                    <Navbar />
+                </Suspense>
+                <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+                    <div className="animate-pulse">Loading...</div>
+                </div>
+            </>
+        );
+    }
+
+    // Redirect if not admin
+    if (user && user.role !== 'ADMIN') {
+        router.push('/');
+        return null;
+    }
+
+    // Redirect to login if not authenticated
+    if (!user) {
+        router.push('/auth/login');
+        return null;
+    }
+
     return (
         <>
             {/* Desktop: Full Navbar */}
             <div className="hidden lg:block">
-                <Navbar hideSearch />
+                <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                    <Navbar hideSearch />
+                </Suspense>
             </div>
             
             {/* Mobile: Simple Header */}
             <MobileHeader 
                 title="Admin Panel" 
-                showBack={false}
+                showBack={true}
+                backHref="/"
                 rightAction={
-                    <Link href="/" className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-                        Exit
+                    <Link href="/" className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
+                        Home
                     </Link>
                 }
             />
@@ -540,77 +561,232 @@ export default function AdminDashboard() {
             <div className="flex h-screen bg-slate-50 dark:bg-slate-950 lg:pt-0">
                 {/* Desktop Sidebar */}
                 <div className="hidden lg:block">
-                    <AdminSidebar activeView={activeView} onViewChange={setActiveView} />
+                    <AdminSidebar 
+                        activeView={activeView} 
+                        onViewChange={(view) => setActiveView(view as typeof activeView)} 
+                    />
                 </div>
                 
                 {/* Mobile Bottom Sheet Menu */}
-                <AdminMobileMenu activeView={activeView} onViewChange={setActiveView} />
+                <AdminMobileMenu 
+                    activeView={activeView} 
+                    onViewChange={(view) => setActiveView(view as typeof activeView)} 
+                />
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-auto">
-                <div className="p-8">
+                <main className="flex-1 overflow-auto pb-20 lg:pb-0">
+                <div className="p-4 sm:p-6 lg:p-8">
                     {/* Dashboard View */}
                     {activeView === 'dashboard' && stats && (
                         <>
                             {/* Page Header */}
-                            <div className="mb-8">
-                                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                            <div className="mb-6 lg:mb-8">
+                                <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-2">
                                     Dashboard
                                 </h2>
-                                <p className="text-slate-600 dark:text-slate-400">
-                                    Overview of your marketplace
+                                <p className="text-sm lg:text-base text-slate-600 dark:text-slate-400">
+                                    Overview of your marketplace performance
                                 </p>
                             </div>
 
-                            {/* Stat Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            {/* Key Metrics - Top Row */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6">
                                 <StatCard
-                                    icon={<UserGroupIcon className="w-12 h-12" />}
+                                    icon={<UserGroupIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
                                     title="Total Users"
                                     value={stats.totalUsers}
+                                    trend={`${stats.activeUsers} active`}
                                 />
                                 <StatCard
-                                    icon={<DocumentTextIcon className="w-12 h-12" />}
+                                    icon={<DocumentTextIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
                                     title="Total Posts"
                                     value={stats.totalPosts}
+                                    trend={`${stats.recentPosts7d} this week`}
                                 />
                                 <StatCard
-                                    icon={<CalendarDaysIcon className="w-12 h-12" />}
-                                    title="Recent Posts"
-                                    value={stats.recentPosts}
-                                    trend="Last 7 days"
+                                    icon={<EyeIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
+                                    title="Total Views"
+                                    value={stats.totalViews?.toLocaleString() || 0}
+                                    trend="All time"
                                 />
                                 <StatCard
-                                    icon={<ChartBarIcon className="w-12 h-12" />}
-                                    title="Categories"
-                                    value={stats.postsByCategory?.length || 0}
+                                    icon={<ChatBubbleLeftRightIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
+                                    title="Conversations"
+                                    value={stats.totalConversations || 0}
+                                    trend={`${stats.totalMessages || 0} messages`}
                                 />
                             </div>
 
-                            {/* Posts by Category */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Secondary Metrics */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6">
+                                <StatCard
+                                    icon={<CheckCircleIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
+                                    title="Active Posts"
+                                    value={stats.postsByStatus?.ACTIVE || 0}
+                                    trend={`${stats.postsByStatus?.SOLD || 0} sold`}
+                                />
+                                <StatCard
+                                    icon={<CurrencyDollarIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
+                                    title="Avg Price"
+                                    value={stats.averagePrice ? `${Math.round(stats.averagePrice).toLocaleString()} ALL` : 'N/A'}
+                                    trend={stats.minPrice && stats.maxPrice ? `${Math.round(stats.minPrice)} - ${Math.round(stats.maxPrice)}` : ''}
+                                />
+                                <StatCard
+                                    icon={<ArrowTrendingUpIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
+                                    title="New Users (7d)"
+                                    value={stats.recentUsers7d || 0}
+                                    trend={`${stats.recentUsers30d || 0} this month`}
+                                />
+                                <StatCard
+                                    icon={<BuildingStorefrontIcon className="w-8 h-8 lg:w-12 lg:h-12" />}
+                                    title="Subscriptions"
+                                    value={stats.activeSubscriptions || 0}
+                                    trend={`${stats.subscriptionBreakdown?.PREMIUM || 0} premium`}
+                                />
+                            </div>
+
+                            {/* Detailed Statistics Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                {/* Posts by Status */}
                                 <div className="card">
-                                    <h3 className="text-lg font-semibold mb-4">Posts by Category</h3>
+                                    <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                                        <ChartBarIcon className="w-5 h-5" />
+                                        Posts by Status
+                                    </h3>
                                     <div className="space-y-3">
-                                        {stats.postsByCategory?.map((item: any) => (
-                                            <div key={item.category} className="flex items-center justify-between">
-                                                <span className="text-slate-700 dark:text-slate-300">{item.category}</span>
-                                                <span className="font-semibold text-primary-600 dark:text-primary-400">
+                                        <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircleIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                                <span className="text-slate-700 dark:text-slate-300 font-medium">Active</span>
+                                            </div>
+                                            <span className="font-bold text-green-600 dark:text-green-400 text-lg">
+                                                {stats.postsByStatus?.ACTIVE || 0}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <CurrencyDollarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                <span className="text-slate-700 dark:text-slate-300 font-medium">Sold</span>
+                                            </div>
+                                            <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">
+                                                {stats.postsByStatus?.SOLD || 0}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <EyeIcon className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                                <span className="text-slate-700 dark:text-slate-300 font-medium">Hidden</span>
+                                            </div>
+                                            <span className="font-bold text-yellow-600 dark:text-yellow-400 text-lg">
+                                                {stats.postsByStatus?.HIDDEN || 0}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <XCircleIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                                <span className="text-slate-700 dark:text-slate-300 font-medium">Deleted</span>
+                                            </div>
+                                            <span className="font-bold text-red-600 dark:text-red-400 text-lg">
+                                                {stats.postsByStatus?.DELETED || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Posts by Category */}
+                                <div className="card">
+                                    <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                                        <TagIcon className="w-5 h-5" />
+                                        Top Categories
+                                    </h3>
+                                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                                        {stats.postsByCategory?.slice(0, 10).map((item: any, index: number) => {
+                                            const maxCount = stats.postsByCategory?.[0]?.count || 1;
+                                            const percentage = (item.count / maxCount) * 100;
+                                            return (
+                                                <div key={item.category}>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                            {index + 1}. {item.category}
+                                                        </span>
+                                                        <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                                                            {item.count}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                                        <div
+                                                            className="bg-primary-600 dark:bg-primary-500 h-2 rounded-full transition-all"
+                                                            style={{ width: `${percentage}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Additional Stats Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                {/* Top Locations */}
+                                {stats.postsByLocation && stats.postsByLocation.length > 0 && (
+                                    <div className="card">
+                                        <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                                            <MapPinIcon className="w-5 h-5" />
+                                            Top Locations
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {stats.postsByLocation.map((item: any, index: number) => (
+                                                <div key={item.location} className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg">
+                                                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                                                        {index + 1}. {item.location}
+                                                    </span>
+                                                    <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                                                     {item.count}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
+                                )}
 
-                                {/* Quick Actions */}
+                                {/* Subscription Breakdown */}
                                 <div className="card">
-                                    <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+                                    <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                                        <CreditCardIcon className="w-5 h-5" />
+                                        Subscription Plans
+                                    </h3>
                                     <div className="space-y-3">
+                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                            <span className="text-slate-700 dark:text-slate-300 font-medium">Free</span>
+                                            <span className="font-bold text-slate-900 dark:text-white text-lg">
+                                                {stats.subscriptionBreakdown?.FREE || 0}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <span className="text-slate-700 dark:text-slate-300 font-medium">Basic</span>
+                                            <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">
+                                                {stats.subscriptionBreakdown?.BASIC || 0}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                                            <span className="text-slate-700 dark:text-slate-300 font-medium">Premium</span>
+                                            <span className="font-bold text-primary-600 dark:text-primary-400 text-lg">
+                                                {stats.subscriptionBreakdown?.PREMIUM || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quick Actions */}
+                            <div className="card">
+                                <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Quick Actions</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                         <button
                                             onClick={() => reindexMutation.mutate()}
                                             disabled={reindexMutation.isPending}
-                                            className="w-full btn-primary disabled:opacity-50 text-left flex items-center gap-2"
+                                        className="btn-primary disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             {reindexMutation.isPending ? (
                                                 <>
@@ -628,19 +804,18 @@ export default function AdminDashboard() {
                                         </button>
                                         <button
                                             onClick={() => setActiveView('users')}
-                                            className="w-full btn-secondary text-left flex items-center gap-2"
+                                        className="btn-secondary flex items-center justify-center gap-2"
                                         >
                                             <UserGroupIcon className="w-4 h-4" />
                                             Manage Users
                                         </button>
                                         <button
                                             onClick={() => setActiveView('posts')}
-                                            className="w-full btn-secondary text-left flex items-center gap-2"
+                                        className="btn-secondary flex items-center justify-center gap-2"
                                         >
                                             <DocumentTextIcon className="w-4 h-4" />
                                             Manage Posts
                                         </button>
-                                    </div>
                                 </div>
                             </div>
                         </>
@@ -649,15 +824,15 @@ export default function AdminDashboard() {
                     {/* Users View */}
                     {activeView === 'users' && usersData && (
                         <>
-                            <div className="mb-6">
-                                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Users</h2>
-                                <p className="text-slate-600 dark:text-slate-400">
+                            <div className="mb-4 lg:mb-6">
+                                <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-2">Users</h2>
+                                <p className="text-sm lg:text-base text-slate-600 dark:text-slate-400">
                                     Total: {usersData.total} users | Page {usersData.page} of {usersData.totalPages}
                                 </p>
                             </div>
 
                             <div className="card overflow-hidden">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto admin-table-container">
                                     <table className="w-full font-sans">
                                         <thead className="bg-gray-50 dark:bg-gray-800 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
@@ -738,7 +913,7 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="card overflow-hidden">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto admin-table-container">
                                     <table className="w-full font-sans">
                                         <thead className="bg-gray-50 dark:bg-gray-800 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
@@ -930,7 +1105,7 @@ export default function AdminDashboard() {
                             )}
 
                             <div className="card overflow-hidden">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto admin-table-container">
                                     <table className="w-full font-sans">
                                         <thead className="bg-gray-50 dark:bg-gray-800 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
@@ -1162,7 +1337,7 @@ export default function AdminDashboard() {
                             )}
 
                             <div className="card overflow-hidden">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto admin-table-container">
                                     <table className="w-full font-sans">
                                         <thead className="bg-gray-50 dark:bg-gray-800 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
@@ -1377,7 +1552,7 @@ export default function AdminDashboard() {
                             )}
 
                             <div className="card overflow-hidden">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto admin-table-container">
                                     <table className="w-full font-sans">
                                         <thead className="bg-gray-50 dark:bg-gray-800 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
@@ -1551,7 +1726,7 @@ export default function AdminDashboard() {
                             )}
 
                             <div className="card overflow-hidden">
-                                <div className="overflow-x-auto">
+                                <div className="overflow-x-auto admin-table-container">
                                     <table className="w-full font-sans">
                                         <thead className="bg-gray-50 dark:bg-gray-800 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
@@ -1757,7 +1932,7 @@ export default function AdminDashboard() {
                                                 disabled={!bulkBlacklistWords.trim()}
                                                 className="btn-primary"
                                             >
-                                                Shto {bulkBlacklistWords.split('\n').filter(w => w.trim()).length} Fjalë
+                                                Shto {bulkBlacklistWords.split('\n').filter((w: string) => w.trim()).length} Fjalë
                                             </button>
                                         </div>
                                     </div>

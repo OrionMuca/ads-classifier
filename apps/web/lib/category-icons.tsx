@@ -45,7 +45,6 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
     'pc': ComputerDesktopIcon,
     'tablets': DevicePhoneMobileIcon,
     'tableta': DevicePhoneMobileIcon,
-    'kamera': CameraIcon,
     'foto': CameraIcon,
     'audio': MusicalNoteIcon,
     'tv': DevicePhoneMobileIcon,
@@ -78,7 +77,6 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
     'motorcycles': TruckIcon,
     'motocikleta': TruckIcon,
     'motoçikleta': TruckIcon,
-    'motocikleta': TruckIcon,
     'bikes': TruckIcon,
     'bicikleta': TruckIcon,
     'pjesë': WrenchScrewdriverIcon,
@@ -164,7 +162,6 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
     'laborator': BeakerIcon,
     
     // Art & Crafts
-    'art': PaintBrushIcon,
     'art': PaintBrushIcon,
     'arte': PaintBrushIcon,
     'crafts': PaintBrushIcon,

@@ -9,10 +9,19 @@ interface MobileHeaderProps {
     showBack?: boolean;
     showLogo?: boolean;
     rightAction?: React.ReactNode;
+    backHref?: string; // Optional: specify where back button should go (defaults to router.back())
 }
 
-export function MobileHeader({ title, showBack = true, showLogo = false, rightAction }: MobileHeaderProps) {
+export function MobileHeader({ title, showBack = true, showLogo = false, rightAction, backHref }: MobileHeaderProps) {
     const router = useRouter();
+
+    const handleBack = () => {
+        if (backHref) {
+            router.push(backHref);
+        } else {
+            router.back();
+        }
+    };
 
     return (
         <div className="lg:hidden sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
@@ -20,7 +29,7 @@ export function MobileHeader({ title, showBack = true, showLogo = false, rightAc
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                     {showBack && (
                         <button
-                            onClick={() => router.back()}
+                            onClick={handleBack}
                             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
                             aria-label="Go back"
                         >

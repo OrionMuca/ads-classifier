@@ -46,8 +46,11 @@ export function HeroSection() {
     });
 
     // Combine posts and ads for hero carousel
+    // Best practice: Show featured/popular products first, then ads
+    // Priority: 1) Popular/Trending products (3-4 items), 2) Banner ads (1-2 items)
     const heroItems: HeroItem[] = [
-        ...(popularData || []).slice(0, 3).map((post: any) => ({
+        // Featured products first (most important for marketplace)
+        ...(popularData || []).slice(0, 4).map((post: any) => ({
             id: post.id,
             type: 'post' as const,
             title: post.title,
@@ -55,6 +58,7 @@ export function HeroSection() {
             price: post.price,
             category: post.category?.name,
         })),
+        // Banner ads after products (max 2 to avoid overwhelming)
         ...(ads || []).slice(0, 2).map((ad: any) => ({
             id: ad.id,
             type: 'ad' as const,
@@ -130,9 +134,11 @@ export function HeroSection() {
 
     return (
         <div
-            className="relative h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800"
+            className="relative h-[280px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setTimeout(() => setIsPaused(false), 5000)}
             style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
         >
             {/* Background Image - with hardware acceleration fix for mobile */}
@@ -151,20 +157,26 @@ export function HeroSection() {
             <div className="relative z-10 h-full flex items-center">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                     <div className="max-w-2xl">
-                        {/* Badge */}
+                        {/* Badge - Show category for products, ad label for ads */}
                         {currentItem.type === 'ad' && (
-                            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/30 rounded-full text-xs sm:text-sm font-semibold text-white border border-white/40">
-                                📢 Reklamë
+                            <div className="inline-flex items-center gap-1.5 mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold text-white border border-white/30">
+                                <span>📢</span>
+                                <span>Reklamë</span>
                             </div>
                         )}
                         {currentItem.type === 'post' && currentItem.category && (
-                            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/30 rounded-full text-xs sm:text-sm font-semibold text-white border border-white/40">
+                            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold text-white border border-white/30">
                                 {currentItem.category}
                             </div>
                         )}
+                        {currentItem.type === 'post' && !currentItem.category && (
+                            <div className="inline-block mb-3 sm:mb-4 px-3 sm:px-4 py-1 sm:py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold text-white border border-white/30">
+                                Produkt i Rekomanduar
+                            </div>
+                        )}
 
-                        {/* Title */}
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 drop-shadow-2xl leading-tight">
+                        {/* Title - Optimized for mobile readability */}
+                        <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 drop-shadow-2xl leading-tight line-clamp-2">
                             {currentItem.title}
                         </h1>
 
@@ -175,15 +187,15 @@ export function HeroSection() {
                             </p>
                         )}
 
-                        {/* CTA Button */}
+                        {/* CTA Button - Mobile optimized touch target */}
                         <button
                             onClick={() => handleItemClick(currentItem)}
-                            className="group inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 bg-white text-primary-600 rounded-full font-semibold text-base sm:text-lg hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                            className="group inline-flex items-center gap-2 px-5 py-2.5 sm:px-8 sm:py-4 bg-white text-primary-600 rounded-full font-semibold text-sm sm:text-lg hover:bg-primary-50 active:scale-95 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 min-h-[44px] sm:min-h-0"
                         >
                             <span>
                                 {currentItem.type === 'ad' ? 'Shiko Reklamën' : 'Shiko Detajet'}
                             </span>
-                            <ArrowRightIcon className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
                 </div>
@@ -209,23 +221,25 @@ export function HeroSection() {
                 </>
             )}
 
-            {/* Dots Indicator */}
+            {/* Dots Indicator - Smaller on mobile */}
+            {/* 
             {heroItems.length > 1 && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 sm:gap-2">
                     {heroItems.map((_, index) => (
                         <button
                             key={index}
                             onClick={() => goToSlide(index)}
-                            className={`h-2 rounded-full transition-all ${
+                            className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                                 index === currentIndex
-                                    ? 'w-8 bg-white'
-                                    : 'w-2 bg-white/50 hover:bg-white/75'
+                                    ? 'w-6 sm:w-8 bg-white'
+                                    : 'w-1.5 sm:w-2 bg-white/50 hover:bg-white/75'
                             }`}
                             aria-label={`Go to slide ${index + 1}`}
                         />
                     ))}
                 </div>
             )}
+            */}
         </div>
     );
 }

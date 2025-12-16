@@ -1,48 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
+
+export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const loginMutation = useMutation({
-        mutationFn: async (data: typeof formData) => {
-            const response = await api.post('/auth/login', data);
-            return response.data;
-        },
-        onSuccess: (data) => {
-            // Store tokens (API returns camelCase: accessToken, refreshToken)
-            localStorage.setItem('accessToken', data.accessToken || data.access_token);
-            localStorage.setItem('refreshToken', data.refreshToken || data.refresh_token);
-            localStorage.setItem('userId', data.user.id);
-            // Store user with role information
-            localStorage.setItem('user', JSON.stringify(data.user));
-            // Redirect admin users to admin dashboard
-            if (data.user.role === 'ADMIN') {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsLoading(true);
+
+        try {
+            const loggedInUser = await login(formData.email, formData.password);
+            // Small delay to ensure AuthContext state is updated before redirect
+            await new Promise(resolve => setTimeout(resolve, 100));
+            // Redirect based on user role from login response
+            if (loggedInUser?.role === 'ADMIN') {
                 router.push('/admin');
             } else {
                 router.push('/');
             }
-        },
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        loginMutation.mutate(formData);
+        } catch (err: any) {
+            // Use error message from context if available, otherwise default message
+            const errorMessage = err?.message || err?.response?.data?.message || 'Email ose fjalëkalim i gabuar';
+            setError(errorMessage);
+            setIsLoading(false);
+        }
     };
 
     return (
         <>
-            <Navbar />
+            <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                <Navbar />
+            </Suspense>
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
                 <div className="max-w-md w-full">
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-8">
@@ -80,18 +83,18 @@ export default function LoginPage() {
                                 />
                             </div>
 
-                            {loginMutation.isError && (
+                            {error && (
                                 <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg text-sm border border-rose-200 dark:border-rose-800">
-                                    Email ose fjalëkalim i gabuar
+                                    {error}
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                disabled={loginMutation.isPending}
+                                disabled={isLoading}
                                 className="w-full btn-primary text-white"
                             >
-                                {loginMutation.isPending ? 'Duke u identifikuar...' : 'Identifikohu'}
+                                {isLoading ? 'Duke u identifikuar...' : 'Identifikohu'}
                             </button>
                         </form>
 

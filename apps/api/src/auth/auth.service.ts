@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +12,11 @@ export class AuthService {
     ) { }
 
     async register(registerDto: RegisterDto) {
+        // Validate that both terms and privacy are accepted
+        if (!registerDto.acceptedTerms || !registerDto.acceptedPrivacy) {
+            throw new BadRequestException('Duhet të pranoni Kushtet e Shërbimit dhe Politiken e Privatësisë për të regjistruar');
+        }
+
         const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
         const user = await this.prisma.user.create({
@@ -20,6 +25,8 @@ export class AuthService {
                 password: hashedPassword,
                 name: registerDto.name,
                 phone: registerDto.phone,
+                termsAcceptedAt: new Date(),
+                privacyAcceptedAt: new Date(),
             },
         });
 

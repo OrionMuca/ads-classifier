@@ -7,6 +7,7 @@ export class MessagesService {
 
     /**
      * Get all conversations for a user
+     * Returns conversations ordered by most recent activity
      */
     async getUserConversations(userId: string) {
         const conversations = await this.prisma.conversation.findMany({
@@ -30,6 +31,14 @@ export class MessagesService {
                         },
                     },
                 },
+                post: {
+                    select: {
+                        id: true,
+                        title: true,
+                        images: true,
+                        price: true,
+                    },
+                },
                 messages: {
                     take: 1,
                     orderBy: { createdAt: 'desc' },
@@ -47,7 +56,7 @@ export class MessagesService {
             },
         });
 
-        // Calculate unread count for each conversation
+        // Calculate unread count for each conversation and format response
         const conversationsWithUnread = await Promise.all(
             conversations.map(async (conv) => {
                 const unreadCount = await this.prisma.message.count({
@@ -62,11 +71,14 @@ export class MessagesService {
                     ...conv,
                     unreadCount,
                     lastMessage: conv.messages[0] || null,
+                    // Remove messages array from response (we only need lastMessage)
+                    messages: undefined,
                 };
             }),
         );
 
-        return conversationsWithUnread;
+        // Remove undefined messages field
+        return conversationsWithUnread.map(({ messages, ...conv }) => conv);
     }
 
     /**
@@ -86,6 +98,14 @@ export class MessagesService {
                                 avatar: true,
                             },
                         },
+                    },
+                },
+                post: {
+                    select: {
+                        id: true,
+                        title: true,
+                        images: true,
+                        price: true,
                     },
                 },
                 messages: {
@@ -122,57 +142,88 @@ export class MessagesService {
 
     /**
      * Create a new conversation
+     * Best practice: One conversation per (user1, user2, post) combination
      */
     async createConversation(participantIds: string[], postId?: string) {
-        // Check if conversation already exists between these users
-        if (participantIds.length === 2 && postId) {
-            const existing = await this.prisma.conversation.findFirst({
-                where: {
-                    postId,
-                    AND: [
-                        {
-                            participants: {
-                                some: {
-                                    userId: participantIds[0],
-                                },
-                            },
-                        },
-                        {
-                            participants: {
-                                some: {
-                                    userId: participantIds[1],
-                                },
-                            },
-                        },
-                    ],
-                },
-                include: {
+        // Ensure we have at least 2 participants (current user + at least one other)
+        if (participantIds.length < 2) {
+            throw new ForbiddenException('Një bisedë duhet të ketë të paktën 2 pjesëmarrës.');
+        }
+
+        // Remove duplicates and sort for consistent comparison
+        const sortedParticipantIds = Array.from(new Set(participantIds)).sort();
+
+        // Ensure we still have at least 2 unique participants after deduplication
+        if (sortedParticipantIds.length < 2) {
+            throw new ForbiddenException('Një bisedë duhet të ketë të paktën 2 pjesëmarrës të ndryshëm.');
+        }
+
+        // Find existing conversation with exactly these participants and postId
+        // For post-based conversations: must match postId and both participants
+        // For general conversations: must match both participants and no postId
+        const existingConversations = await this.prisma.conversation.findMany({
+            where: {
+                ...(postId ? { postId } : { postId: null }),
+                AND: sortedParticipantIds.map((userId) => ({
                     participants: {
-                        include: {
-                            user: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    email: true,
-                                    avatar: true,
-                                },
+                        some: {
+                            userId,
+                        },
+                    },
+                })),
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                avatar: true,
                             },
                         },
                     },
                 },
-            });
+                post: {
+                    select: {
+                        id: true,
+                        title: true,
+                        images: true,
+                        price: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        participants: true,
+                    },
+                },
+            },
+        });
 
-            if (existing) {
-                return existing;
+        // Filter to find conversation with exactly these participants (no more, no less)
+        const exactMatch = existingConversations.find((conv) => {
+            // Must have exactly the same number of participants
+            if (conv._count.participants !== sortedParticipantIds.length) {
+                return false;
             }
+            // All participant IDs must match
+            const convParticipantIds = conv.participants
+                .map((p) => p.userId)
+                .sort();
+            return convParticipantIds.every((id) => sortedParticipantIds.includes(id));
+        });
+
+        if (exactMatch) {
+            return exactMatch;
         }
 
         // Create new conversation
         const conversation = await this.prisma.conversation.create({
             data: {
-                postId,
+                postId: postId || null,
                 participants: {
-                    create: participantIds.map((userId) => ({
+                    create: sortedParticipantIds.map((userId) => ({
                         userId,
                     })),
                 },
@@ -188,6 +239,14 @@ export class MessagesService {
                                 avatar: true,
                             },
                         },
+                    },
+                },
+                post: {
+                    select: {
+                        id: true,
+                        title: true,
+                        images: true,
+                        price: true,
                     },
                 },
             },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -19,7 +19,9 @@ import { ViewToggle, ViewMode } from '@/components/home/ViewToggle';
 import { SortOption } from '@/components/FilterDrawer';
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+function HomeContent() {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get('query') || '';
   const showFilters = searchParams.get('showFilters') === 'true';
@@ -52,15 +54,19 @@ export default function Home() {
     }
   }, [viewMode]);
 
-  // Sync search state with URL query param - always update when URL changes
+  // Sync search state with URL query param - only update when URL actually changes
+  const prevUrlQueryRef = React.useRef(urlQuery);
   useEffect(() => {
     const newSearch = urlQuery || '';
-    // Always update, even if same value, to trigger refetch
-    setSearch(newSearch);
-    
-    // Reset interaction tracking when search changes
-    setSearchStartTime(Date.now());
-    setClickedPostIds(new Set());
+    // Only update if URL query actually changed
+    if (prevUrlQueryRef.current !== newSearch) {
+      prevUrlQueryRef.current = newSearch;
+      setSearch(newSearch);
+      
+      // Reset interaction tracking when search changes
+      setSearchStartTime(Date.now());
+      setClickedPostIds(new Set());
+    }
   }, [urlQuery]);
 
   // Track search interaction when component unmounts or search changes
@@ -99,21 +105,21 @@ export default function Home() {
     }
   }, [showFilters, searchParams]);
 
-  // Debug: Log API URL on mount (client-side only)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const apiUrl = hostname === 'localhost' || hostname === '127.0.0.1' 
-        ? 'http://localhost:3000' 
-        : `http://${hostname}:3000`;
-      console.log('🔧 Page loaded - API URL should be:', apiUrl);
-      console.log('🔧 Current hostname:', hostname);
-      console.log('🔧 Full URL:', window.location.href);
-    }
-  }, []);
+
+  // CRITICAL FIX: Memoize query key to prevent object reference changes from causing refetches
+  const queryKey = useMemo(() => {
+    // Serialize filters object to a stable string representation
+    const filtersKey = JSON.stringify({
+      categoryId: filters.categoryId || '',
+      locationId: filters.locationId || '',
+      minPrice: filters.minPrice || '',
+      maxPrice: filters.maxPrice || '',
+    });
+    return ['posts', search.trim(), filtersKey, sortBy];
+  }, [search, filters.categoryId, filters.locationId, filters.minPrice, filters.maxPrice, sortBy]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error, isError } = useInfiniteQuery({
-    queryKey: ['posts', search.trim(), filters, sortBy],
+    queryKey,
     queryFn: async ({ pageParam }) => {
       try {
         const params = new URLSearchParams();
@@ -128,16 +134,7 @@ export default function Home() {
         const searchUrl = `/search?${params.toString()}`;
         
         const response = await api.get(searchUrl);
-        
-        // Enhanced logging for debugging
         const responseData = response.data || {};
-        console.log('✅ Search response:', {
-          total: responseData.total,
-          hitsCount: responseData.hits?.length || 0,
-          hasHits: !!responseData.hits,
-          firstHit: responseData.hits?.[0],
-          url: searchUrl,
-        });
         
         // Ensure we always return a valid structure
         return {
@@ -145,13 +142,6 @@ export default function Home() {
           total: responseData.total || 0,
         };
       } catch (err: any) {
-        console.error('❌ Search error:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status,
-          url: err.config?.url,
-          baseURL: err.config?.baseURL,
-        });
         // Return empty result instead of throwing to prevent page crash
         return { hits: [], total: 0 };
       }
@@ -172,7 +162,7 @@ export default function Home() {
   // Safely extract posts from all pages
   const allPosts = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages.flatMap((page) => {
+    return data.pages.flatMap((page: any) => {
       if (!page || !page.hits) return [];
       return page.hits.filter((hit: any) => hit && hit.id); // Filter out invalid hits
     });
@@ -184,10 +174,8 @@ export default function Home() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/ads?activeOnly=true');
-        console.log('📢 Ads loaded:', data?.length || 0);
         return data || [];
       } catch (err: any) {
-        console.error('❌ Ads error:', err.message);
         return []; // Return empty array on error, don't break the page
       }
     },
@@ -206,7 +194,7 @@ export default function Home() {
     const cardAds = ads.filter((ad: any) => ad.layout === 'CARD' && ad.active);
     
     // Shuffle card ads for variety (but keep banner order)
-    const shuffledCardAds = [...cardAds].sort(() => Math.random() - 0.5);
+    const shuffledCardAds = [...cardAds].sort((_a: any, _b: any) => Math.random() - 0.5);
     
     const result: Array<{ type: 'post' | 'ad'; data: any }> = [];
     let cardAdIndex = 0;
@@ -324,8 +312,6 @@ export default function Home() {
 
   return (
     <>
-      <Navbar />
-
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
         {/* Enhanced Hero Section with rotating featured content */}
         <HeroSection />
@@ -491,6 +477,23 @@ export default function Home() {
       </button>
 
       <Footer />
+    </>
+  );
+}
+
+export default function Home() {
+  return (
+    <>
+      <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+        <Navbar />
+      </Suspense>
+      <Suspense fallback={
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+          <div className="animate-pulse">Loading...</div>
+        </div>
+      }>
+        <HomeContent />
+      </Suspense>
     </>
   );
 }

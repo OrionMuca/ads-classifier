@@ -8,13 +8,21 @@ export const getApiUrl = (): string => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     
     if (!apiUrl) {
-        console.error('❌ NEXT_PUBLIC_API_URL is not set!');
-        console.error('📝 Please create apps/web/.env.local and set:');
-        console.error('   NEXT_PUBLIC_API_URL=http://localhost:3000');
-        console.error('   or for mobile: NEXT_PUBLIC_API_URL=http://YOUR_PC_IP:3000');
-        // Fallback to localhost in development
-        return 'http://localhost:3000';
+        // Fallback to localhost:3001 (API port, not web port)
+        return 'http://localhost:3001';
     }
+    
+    // In Docker, server-side requests need to use service name
+    // Client-side (browser) requests need to use localhost or host IP
+    if (typeof window === 'undefined') {
+        // Server-side (SSR): Use Docker service name if available, otherwise use env var
+        // Check if we're in Docker by looking for the service name
+        if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')) {
+            // Replace localhost with service name for server-side requests in Docker
+            return apiUrl.replace('localhost', 'api').replace('127.0.0.1', 'api');
+        }
+    }
+    // Client-side: Use the env var as-is (browser will resolve localhost correctly)
     
     return apiUrl;
 };
@@ -34,16 +42,6 @@ api.interceptors.request.use((config) => {
     // Set baseURL on the config object
     config.baseURL = apiUrl;
     api.defaults.baseURL = apiUrl;
-    
-    // Log in development
-    if (process.env.NODE_ENV === 'development') {
-        console.log('🌐 API Request:', {
-            method: config.method?.toUpperCase() || 'GET',
-            url: config.url,
-            baseURL: config.baseURL,
-            fullURL: `${config.baseURL}${config.url}`,
-        });
-    }
     
     // Add authentication token and session ID (client-side only)
     if (typeof window !== 'undefined') {
@@ -97,7 +95,24 @@ api.interceptors.response.use(
                 }
             } catch (refreshError) {
                 localStorage.clear();
-                window.location.href = '/auth/login';
+                
+                // Only redirect to login if we're not already on a public page
+                if (typeof window !== 'undefined') {
+                    const currentPath = window.location.pathname;
+                    const publicPaths = ['/auth/login', '/auth/register', '/'];
+                    
+                    // Don't redirect if already on a public page or if it's a public API endpoint
+                    const isPublicPath = publicPaths.includes(currentPath);
+                    const isPublicEndpoint = originalRequest.url?.includes('/search') || 
+                                            originalRequest.url?.includes('/categories') || 
+                                            originalRequest.url?.includes('/locations') ||
+                                            originalRequest.url?.includes('/ads') ||
+                                            originalRequest.url?.includes('/theme');
+                    
+                    if (!isPublicPath && !isPublicEndpoint) {
+                        window.location.href = '/auth/login';
+                    }
+                }
             }
         }
 

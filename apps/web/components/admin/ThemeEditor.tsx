@@ -44,6 +44,8 @@ interface Theme {
     textSecondary: string;
     logoUrl?: string;
     faviconUrl?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 interface ColorGroup {
@@ -94,7 +96,6 @@ export function ThemeEditor() {
                 const { data } = await api.get('/theme/active');
                 return data;
             } catch (error) {
-                console.warn('Failed to fetch active theme:', error);
                 return null;
             }
         },
@@ -171,7 +172,7 @@ export function ThemeEditor() {
     }, [selectedTheme]);
 
     const handleColorChange = (field: string, value: string) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        setFormData((prev: Partial<Theme>) => ({ ...prev, [field]: value }));
     };
 
     const handleSave = () => {
@@ -329,13 +330,13 @@ export function ThemeEditor() {
                                                     <div className="flex gap-2">
                                                         <input
                                                             type="color"
-                                                            value={formData[field as keyof Theme] || '#000000'}
+                                                            value={String(formData[field as keyof Theme] || '#000000')}
                                                             onChange={(e) => handleColorChange(field, e.target.value)}
                                                             className="w-12 h-10 rounded border cursor-pointer"
                                                         />
                                                         <input
                                                             type="text"
-                                                            value={formData[field as keyof Theme] || ''}
+                                                            value={String(formData[field as keyof Theme] || '')}
                                                             onChange={(e) => handleColorChange(field, e.target.value)}
                                                             className="flex-1 px-2 py-1 text-xs border rounded dark:bg-slate-800"
                                                             placeholder="#000000"
@@ -359,13 +360,13 @@ export function ThemeEditor() {
                                                 <div className="flex gap-2">
                                                     <input
                                                         type="color"
-                                                        value={formData[field as keyof Theme] || '#000000'}
+                                                        value={String(formData[field as keyof Theme] || '#000000')}
                                                         onChange={(e) => handleColorChange(field, e.target.value)}
                                                         className="w-12 h-10 rounded border cursor-pointer"
                                                     />
                                                     <input
                                                         type="text"
-                                                        value={formData[field as keyof Theme] || ''}
+                                                        value={String(formData[field as keyof Theme] || '')}
                                                         onChange={(e) => handleColorChange(field, e.target.value)}
                                                         className="flex-1 px-2 py-1 text-xs border rounded dark:bg-slate-800"
                                                         placeholder="#000000"

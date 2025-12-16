@@ -43,7 +43,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     const { data } = await api.get(`/search/suggest?query=${encodeURIComponent(searchQuery)}&limit=5`);
                     setSuggestions(data || []);
                 } catch (error) {
-                    console.error('Failed to fetch suggestions', error);
+                    // Silently fail - suggestions are optional
                 }
             };
             const debounce = setTimeout(fetchSuggestions, 300);

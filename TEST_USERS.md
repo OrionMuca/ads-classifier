@@ -132,3 +132,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 2. If it still doesn't work, check the browser console for errors
 3. Share the error message for further debugging
 4. Test both mobile and desktop views
+
+
+
+

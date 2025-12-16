@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -10,11 +10,15 @@ import { Footer } from '@/components/Footer';
 import { ImageUpload } from '@/components/ImageUpload';
 import { CategorySelector } from '@/components/CategorySelector';
 import { LocationSelector } from '@/components/LocationSelector';
+import { useToast } from '@/components/admin/Toast';
+
+export const dynamic = 'force-dynamic';
 
 const DRAFT_STORAGE_KEY = 'new-post-draft';
 
 export default function NewPost() {
     const router = useRouter();
+    const { showToast } = useToast();
     const { data: categories = [], isLoading: categoriesLoading } = useCategories();
     const { data: locations = [], isLoading: locationsLoading } = useLocations();
 
@@ -25,7 +29,7 @@ export default function NewPost() {
             if (saved) {
                 try {
                     return JSON.parse(saved);
-                } catch (e) {
+                } catch (e: unknown) {
                     // Invalid saved data, use defaults
                 }
             }
@@ -85,7 +89,7 @@ export default function NewPost() {
                         // Hide notification after 5 seconds
                         setTimeout(() => setHasRestoredDraft(false), 5000);
                     }
-                } catch (e) {
+                } catch (e: unknown) {
                     // Invalid saved data
                 }
             }
@@ -108,7 +112,7 @@ export default function NewPost() {
         e.preventDefault();
         
         if (formData.images.length === 0) {
-            alert('Ju lutem shtoni të paktën një imazh');
+            showToast('Ju lutem shtoni të paktën një imazh', 'warning');
             return;
         }
 
@@ -118,25 +122,25 @@ export default function NewPost() {
         // Validate categoryId - must be a valid UUID
         const categoryId = formData.categoryId?.trim();
         if (!categoryId || categoryId === '') {
-            alert('Ju lutem zgjidhni një kategori');
+            showToast('Ju lutem zgjidhni një kategori', 'warning');
             return;
         }
         if (!uuidRegex.test(categoryId)) {
-            alert('Gabim: ID e kategorisë nuk është e vlefshme. Ju lutem zgjidhni kategorinë përsëri.');
+            showToast('Gabim: ID e kategorisë nuk është e vlefshme. Ju lutem zgjidhni kategorinë përsëri.', 'error');
             return;
         }
 
         // Validate locationId - check if it exists in locations array
         const locationId = formData.locationId?.trim();
         if (!locationId || locationId === '') {
-            alert('Ju lutem zgjidhni një qytet');
+            showToast('Ju lutem zgjidhni një qytet', 'warning');
             return;
         }
         
         // Check if locationId exists in locations array
         const selectedLocation = locations.find(loc => loc.id === locationId);
         if (!selectedLocation) {
-            alert('Gabim: Qyteti i zgjedhur nuk ekziston. Ju lutem zgjidhni qytetin përsëri.');
+            showToast('Gabim: Qyteti i zgjedhur nuk ekziston. Ju lutem zgjidhni qytetin përsëri.', 'error');
             return;
         }
 
@@ -145,7 +149,7 @@ export default function NewPost() {
             // If location has zones, zoneId is required
             const zoneId = formData.zoneId?.trim();
             if (!zoneId || zoneId === '' || !uuidRegex.test(zoneId)) {
-                alert('Ju lutem zgjidhni një zonë për këtë qytet');
+                showToast('Ju lutem zgjidhni një zonë për këtë qytet', 'warning');
                 return;
             }
         }
@@ -157,7 +161,7 @@ export default function NewPost() {
             price: parseFloat(formData.price),
             categoryId: categoryId,
             locationId: locationId,
-            images: formData.images.filter(img => img && img.trim() !== ''),
+            images: formData.images.filter((img: string) => img && img.trim() !== ''),
         };
 
         // Only include zoneId if location has zones
@@ -170,16 +174,18 @@ export default function NewPost() {
 
     // Memoize callbacks to prevent infinite loops
     const handleLocationChange = useCallback((locationId: string) => {
-        setFormData(prev => ({ ...prev, locationId, zoneId: '' }));
+        setFormData((prev: typeof formData) => ({ ...prev, locationId, zoneId: '' }));
     }, []);
 
     const handleZoneChange = useCallback((zoneId: string) => {
-        setFormData(prev => ({ ...prev, zoneId }));
+        setFormData((prev: typeof formData) => ({ ...prev, zoneId }));
     }, []);
 
     return (
         <>
-            <Navbar hideSearch={true} />
+            <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                <Navbar hideSearch={true} />
+            </Suspense>
 
             <main className="bg-slate-50 dark:bg-slate-950 py-8 pb-20 lg:pb-8">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

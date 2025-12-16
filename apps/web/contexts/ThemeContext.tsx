@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 
@@ -56,6 +56,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setTheme] = useState<Theme | null>(null);
+    const previousThemeIdRef = useRef<string | null>(null);
 
     // Fetch active theme (non-blocking - fails gracefully)
     const { data: activeTheme, isLoading } = useQuery({
@@ -66,18 +67,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
                 return data;
             } catch (error) {
                 // Fail gracefully - return null if theme fetch fails
-                console.warn('Failed to fetch theme, using defaults:', error);
                 return null;
             }
         },
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
         refetchOnWindowFocus: false, // Don't refetch on window focus (prevents unnecessary refreshes)
+        refetchOnMount: false, // CRITICAL: Don't refetch on mount
         retry: 1, // Only retry once
         retryDelay: 1000, // Wait 1 second before retry
     });
 
-    // Apply theme to CSS variables
-    const applyTheme = (themeData: Theme) => {
+    // Separate CSS application from state update to prevent loops
+    const applyThemeCSS = useCallback((themeData: Theme) => {
         if (!themeData) return;
 
         const root = document.documentElement;
@@ -140,19 +141,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
                 document.head.appendChild(newLink);
             }
         }
+    }, []);
 
-        setTheme(themeData);
-    };
-
-    // Apply theme when activeTheme changes
+    // Apply theme ONLY when theme ID changes (not when object reference changes)
     useEffect(() => {
-        if (activeTheme) {
-            applyTheme(activeTheme);
+        if (!activeTheme) return;
+        
+        const currentThemeId = activeTheme.id;
+        
+        // Only update if theme ID actually changed
+        if (previousThemeIdRef.current === currentThemeId) {
+            return; // Theme hasn't changed, skip update to prevent loop
         }
-    }, [activeTheme]);
+
+        previousThemeIdRef.current = currentThemeId;
+        applyThemeCSS(activeTheme);
+        setTheme(activeTheme);
+    }, [activeTheme?.id, applyThemeCSS]);
+
+    // Memoize context value to prevent unnecessary re-renders
+    const value = useMemo(() => ({
+        theme,
+        isLoading,
+        applyTheme: applyThemeCSS,
+    }), [theme, isLoading, applyThemeCSS]);
 
     return (
-        <ThemeContext.Provider value={{ theme, isLoading, applyTheme }}>
+        <ThemeContext.Provider value={value}>
             {children}
         </ThemeContext.Provider>
     );

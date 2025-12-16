@@ -118,17 +118,53 @@ export class AdminService {
 
     // Statistics
     async getStats() {
-        const [totalUsers, totalPosts, recentPosts] = await Promise.all([
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        // Basic counts
+        const [
+            totalUsers,
+            activeUsers,
+            totalPosts,
+            recentPosts7d,
+            recentPosts30d,
+            recentUsers7d,
+            recentUsers30d,
+        ] = await Promise.all([
             this.prisma.user.count(),
+            this.prisma.user.count({ where: { isActive: true } }),
             this.prisma.post.count(),
             this.prisma.post.count({
-                where: {
-                    createdAt: {
-                        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-                    },
-                },
+                where: { createdAt: { gte: sevenDaysAgo } },
+            }),
+            this.prisma.post.count({
+                where: { createdAt: { gte: thirtyDaysAgo } },
+            }),
+            this.prisma.user.count({
+                where: { createdAt: { gte: sevenDaysAgo } },
+            }),
+            this.prisma.user.count({
+                where: { createdAt: { gte: thirtyDaysAgo } },
             }),
         ]);
+
+        // Posts by status
+        const postsByStatus = await this.prisma.post.groupBy({
+            by: ['status'],
+            _count: true,
+        });
+
+        const statusCounts = {
+            ACTIVE: 0,
+            SOLD: 0,
+            HIDDEN: 0,
+            DELETED: 0,
+        };
+
+        postsByStatus.forEach((item) => {
+            statusCounts[item.status] = item._count;
+        });
 
         // Posts by category
         const postsByCategory = await this.prisma.post.groupBy({
@@ -143,16 +179,108 @@ export class AdminService {
 
         const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
-        const postsByCategoryWithNames = postsByCategory.map(item => ({
-            category: categoryMap.get(item.categoryId) || 'Unknown',
-            count: item._count,
-        }));
+        const postsByCategoryWithNames = postsByCategory
+            .map(item => ({
+                category: categoryMap.get(item.categoryId) || 'Unknown',
+                count: item._count,
+            }))
+            .sort((a, b) => b.count - a.count);
+
+        // Posts by location (top 5)
+        const postsByLocation = await this.prisma.post.groupBy({
+            by: ['locationId'],
+            _count: true,
+        });
+
+        const locations = await this.prisma.location.findMany({
+            select: { id: true, city: true, country: true },
+        });
+
+        const locationMap = new Map(
+            locations.map(l => [l.id, `${l.city}, ${l.country}`])
+        );
+
+        const postsByLocationWithNames = postsByLocation
+            .map(item => ({
+                location: locationMap.get(item.locationId) || 'Unknown',
+                count: item._count,
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        // Total views and average price
+        const [totalViews, priceStats] = await Promise.all([
+            this.prisma.post.aggregate({
+                _sum: { viewCount: true },
+            }),
+            this.prisma.post.aggregate({
+                _avg: { price: true },
+                _min: { price: true },
+                _max: { price: true },
+            }),
+        ]);
+
+        // Subscription statistics
+        const [totalSubscriptions, activeSubscriptions, subscriptionBreakdown] = await Promise.all([
+            this.prisma.subscriptionHistory.count(),
+            this.prisma.user.count({
+                where: {
+                    subscriptionStatus: 'ACTIVE',
+                    subscription: { not: 'FREE' },
+                },
+            }),
+            this.prisma.user.groupBy({
+                by: ['subscription'],
+                _count: true,
+            }),
+        ]);
+
+        const subscriptionCounts = {
+            FREE: 0,
+            BASIC: 0,
+            PREMIUM: 0,
+        };
+
+        subscriptionBreakdown.forEach((item) => {
+            subscriptionCounts[item.subscription] = item._count;
+        });
+
+        // Total conversations and messages
+        const [totalConversations, totalMessages] = await Promise.all([
+            this.prisma.conversation.count(),
+            this.prisma.message.count(),
+        ]);
 
         return {
+            // User stats
             totalUsers,
+            activeUsers,
+            inactiveUsers: totalUsers - activeUsers,
+            recentUsers7d,
+            recentUsers30d,
+            
+            // Post stats
             totalPosts,
-            recentPosts,
+            recentPosts7d,
+            recentPosts30d,
+            postsByStatus: statusCounts,
+            totalViews: totalViews._sum.viewCount || 0,
+            averagePrice: priceStats._avg.price ? Number(priceStats._avg.price) : 0,
+            minPrice: priceStats._min.price ? Number(priceStats._min.price) : 0,
+            maxPrice: priceStats._max.price ? Number(priceStats._max.price) : 0,
+            
+            // Category and location stats
             postsByCategory: postsByCategoryWithNames,
+            postsByLocation: postsByLocationWithNames,
+            
+            // Subscription stats
+            totalSubscriptions,
+            activeSubscriptions,
+            subscriptionBreakdown: subscriptionCounts,
+            
+            // Communication stats
+            totalConversations,
+            totalMessages,
         };
     }
 

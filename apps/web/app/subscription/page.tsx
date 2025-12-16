@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { useToast } from '@/components/admin/Toast';
 import { CheckIcon } from '@heroicons/react/24/outline';
+
+export const dynamic = 'force-dynamic';
 
 interface Plan {
     plan: string;
@@ -19,6 +22,7 @@ interface Plan {
 
 export default function SubscriptionPage() {
     const { isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const queryClient = useQueryClient();
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [notes, setNotes] = useState('');
@@ -53,7 +57,7 @@ export default function SubscriptionPage() {
             setShowModal(false);
             setSelectedPlan(null);
             setNotes('');
-            alert('Kërkesa juaj u dërgua me sukses! Administratori do ta shqyrtojë së shpejti.');
+            showToast('Kërkesa juaj u dërgua me sukses! Administratori do ta shqyrtojë së shpejti.', 'success');
         },
     });
 
@@ -64,7 +68,9 @@ export default function SubscriptionPage() {
 
     return (
         <>
-            <Navbar />
+            <Suspense fallback={<div className="h-16 bg-white dark:bg-slate-900" />}>
+                <Navbar />
+            </Suspense>
             <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-12">

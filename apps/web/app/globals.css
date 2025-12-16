@@ -89,6 +89,57 @@
   table td {
     font-family: inherit;
   }
+
+  /* Fix Next.js portal positioning */
+  nextjs-portal {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 0px !important;
+    height: 0px !important;
+    z-index: 9999 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Ensure portal content is properly positioned */
+  nextjs-portal > * {
+    pointer-events: auto !important;
+  }
+
+  /* Mobile-friendly admin tables */
+  @media (max-width: 768px) {
+    .admin-table-container {
+      position: relative;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .admin-table-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 30px;
+      background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.05));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .admin-table-container.scrollable::after {
+      opacity: 1;
+    }
+    
+    table {
+      min-width: 600px;
+    }
+    
+    /* Better touch targets for mobile */
+    button, a, select, input {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
 }
 
 @layer components {

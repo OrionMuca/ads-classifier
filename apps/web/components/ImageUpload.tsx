@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/admin/Toast';
 
 interface ImageUploadProps {
     images: string[];
@@ -13,6 +14,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ images, onChange, maxImages = 10 }: ImageUploadProps) {
     const { isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,13 +23,13 @@ export function ImageUpload({ images, onChange, maxImages = 10 }: ImageUploadPro
         if (!files || files.length === 0) return;
 
         if (!isAuthenticated) {
-            alert('Ju duhet të jeni të kyçur për të ngarkuar imazhe');
+            showToast('Ju duhet të jeni të kyçur për të ngarkuar imazhe', 'warning');
             return;
         }
 
         const remainingSlots = maxImages - images.length;
         if (remainingSlots <= 0) {
-            alert(`Maximum ${maxImages} images allowed`);
+            showToast(`Maksimumi ${maxImages} imazhe të lejuara`, 'warning');
             return;
         }
 
@@ -45,11 +47,10 @@ export function ImageUpload({ images, onChange, maxImages = 10 }: ImageUploadPro
 
             onChange([...images, ...response.data.urls]);
         } catch (error: any) {
-            console.error('Upload error:', error);
             if (error.response?.status === 401) {
-                alert('Ju duhet të jeni të kyçur për të ngarkuar imazhe. Ju lutem rifreskoni faqen dhe provoni përsëri.');
+                showToast('Ju duhet të jeni të kyçur për të ngarkuar imazhe. Ju lutem rifreskoni faqen dhe provoni përsëri.', 'error');
             } else {
-                alert(error.response?.data?.message || 'Failed to upload images');
+                showToast(error.response?.data?.message || 'Dështoi ngarkimi i imazheve', 'error');
             }
         } finally {
             setUploading(false);

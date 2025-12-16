@@ -114,6 +114,23 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
         try {
             const userId = client.data.userId;
 
+            // Validate conversationId
+            if (!data.conversationId) {
+                this.logger.error('Missing conversationId in send_message request');
+                return {
+                    success: false,
+                    error: 'ID e bisedës nuk është e vlefshme.',
+                };
+            }
+
+            // Validate content
+            if (!data.content || !data.content.trim()) {
+                return {
+                    success: false,
+                    error: 'Mesazhi nuk mund të jetë bosh.',
+                };
+            }
+
             // Validate content for blacklisted words
             const containsBlacklist = await this.moderationService.containsBlacklistedWords(
                 data.content,
@@ -130,7 +147,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
             const message = await this.messagesService.sendMessage(
                 data.conversationId,
                 userId,
-                data.content,
+                data.content.trim(),
             );
 
             // Broadcast to conversation room

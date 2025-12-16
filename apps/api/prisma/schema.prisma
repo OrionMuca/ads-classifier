@@ -54,6 +54,10 @@ model User {
   subscriptionStatus   SubscriptionStatus @default(ACTIVE)
   subscriptionEndsAt   DateTime?
   
+  // Legal acceptance
+  termsAcceptedAt   DateTime?
+  privacyAcceptedAt DateTime?
+  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -158,7 +162,8 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  savedBy SavedPost[]
+  savedBy       SavedPost[]
+  conversations Conversation[]
 
   // Indexes for better query performance
   @@index([categoryId])
@@ -187,6 +192,7 @@ model SavedPost {
 model Conversation {
   id        String   @id @default(uuid())
   postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -68,7 +68,7 @@ export function useToast() {
         toastListeners.push(listener);
 
         return () => {
-            toastListeners = toastListeners.filter(l => l !== listener);
+            toastListeners = toastListeners.filter((l: (toast: { message: string; type: ToastType } | null) => void) => l !== listener);
         };
     }, []);
 

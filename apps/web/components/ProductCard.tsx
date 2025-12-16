@@ -55,7 +55,7 @@ export function ProductCard({ post, showSaveButton = false, viewMode = 'grid' }:
         e.stopPropagation();
 
         if (!isAuthenticated) {
-            alert('Please login to save posts');
+            // Toast will be handled by the parent component or redirect to login
             return;
         }
 

@@ -130,7 +130,6 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                         setTrendingProducts(Array.isArray(data?.hits) ? data.hits : []);
                     }
                 } catch (error) {
-                    console.error('Failed to fetch trending products', error);
                     if (!isCancelled) setTrendingProducts([]);
                 } finally {
                     if (!isCancelled) setIsLoadingTrendingProducts(false);
@@ -180,7 +179,6 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                 setSelectedIndex(-1);
                             }
                         } catch (error) {
-                            console.error('Failed to fetch search history', error);
                             if (!isCancelled) setSuggestions([]);
                         }
                     } else {
@@ -195,7 +193,6 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                                 setSelectedIndex(-1);
                             }
                         } catch (error) {
-                            console.error('Failed to fetch trending searches', error);
                             if (!isCancelled) setSuggestions([]);
                         }
                     }
@@ -206,7 +203,6 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
                     }
                 }
             } catch (error) {
-                console.error('Failed to fetch suggestions', error);
                 if (!isCancelled) {
                     setSuggestions([]);
                     setSelectedIndex(-1);
@@ -257,13 +253,10 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
             : (suggestion?.text || suggestion?.query || '');
         
         if (!suggestionText || !suggestionText.trim()) {
-            console.warn('Invalid suggestion:', suggestion);
             return;
         }
 
         const trimmedText = suggestionText.trim();
-        
-        console.log('Suggestion clicked:', { suggestion, trimmedText }); // Debug log
         
         // Close suggestions immediately
         setShowSuggestions(false);
@@ -275,7 +268,6 @@ export function Navbar({ hideSearch = false }: NavbarProps) {
         
         // Navigate to search results
         const url = `/?query=${encodeURIComponent(trimmedText)}`;
-        console.log('Navigating to:', url); // Debug log
         
         // Use router.push to navigate - this will trigger the page to update
         router.push(url);

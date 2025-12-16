@@ -1,14 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { User, AuthResponse } from '@/types';
 import api, { getApiUrl } from '@/lib/api';
 import { getSessionIdForMigration } from '@/lib/session';
 
 interface AuthContextType {
     user: User | null;
-    login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, name?: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<User>;
+    register: (email: string, password: string, name?: string, phone?: string, acceptedTerms?: boolean, acceptedPrivacy?: boolean) => Promise<User>;
     logout: () => void;
     isAuthenticated: boolean;
     isLoading: boolean; // Add loading state
@@ -38,7 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (storedUser) {
                     try {
                         const parsedUser = JSON.parse(storedUser);
-                        setUser(parsedUser);
+                        // Ensure stored user has all required fields
+                        const userData: User = {
+                            ...parsedUser,
+                            createdAt: parsedUser.createdAt || new Date().toISOString(),
+                            updatedAt: parsedUser.updatedAt || new Date().toISOString(),
+                        };
+                        setUser(userData);
                     } catch (e) {
                         // Invalid stored user, clear it
                         localStorage.removeItem('user');
@@ -49,11 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 try {
                     const { data } = await api.get('/users/profile');
                     // Token is valid, update user from server response
-                    const userData = {
+                    const userData: User = {
                         id: data.id,
                         email: data.email,
                         name: data.name,
                         role: data.role,
+                        createdAt: data.createdAt || new Date().toISOString(),
+                        updatedAt: data.updatedAt || new Date().toISOString(),
                     };
                     setUser(userData);
                     localStorage.setItem('user', JSON.stringify(userData));
@@ -79,11 +87,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                                 // Get user profile with new token
                                 const { data: profileData } = await api.get('/users/profile');
-                                const userData = {
+                                const userData: User = {
                                     id: profileData.id,
                                     email: profileData.email,
                                     name: profileData.name,
                                     role: profileData.role,
+                                    createdAt: profileData.createdAt || new Date().toISOString(),
+                                    updatedAt: profileData.updatedAt || new Date().toISOString(),
                                 };
                                 setUser(userData);
                                 localStorage.setItem('user', JSON.stringify(userData));
@@ -105,7 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } catch (error) {
                 // Unexpected error, clear everything
-                console.error('Auth validation error:', error);
                 localStorage.clear();
                 setUser(null);
             } finally {
@@ -116,71 +125,126 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         validateTokenAndLoadUser();
     }, []);
 
-    const login = async (email: string, password: string) => {
-        const { data } = await api.post<AuthResponse>('/auth/login', {
+    const login = useCallback(async (email: string, password: string) => {
+        const response = await api.post<AuthResponse>('/auth/login', {
             email,
             password,
         });
 
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        setUser(data.user);
+        // Handle both direct response and nested data
+        const data = response.data || response;
+        
+        // Validate response structure
+        if (!data || !data.user || (!data.accessToken && !data.access_token)) {
+            throw new Error('Invalid login response: missing required fields');
+        }
 
-        // Merge anonymous session history to user account
+        const accessToken = data.accessToken || data.access_token;
+        const refreshToken = data.refreshToken || data.refresh_token;
+
+        if (!accessToken || !refreshToken) {
+            throw new Error('Invalid login response: missing tokens');
+        }
+
+        // Ensure user object has all required fields
+        const userData: User = {
+            ...data.user,
+            createdAt: data.user.createdAt || new Date().toISOString(),
+            updatedAt: data.user.updatedAt || new Date().toISOString(),
+        };
+
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('userId', userData.id);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+
+        // Merge anonymous session history to user account (non-blocking)
+        // Wait a bit to ensure token is set in axios instance
         const sessionId = getSessionIdForMigration();
         if (sessionId) {
-            try {
-                await api.post('/search/merge-session');
-            } catch (error) {
-                // Silently fail - session merge is not critical
-                console.warn('Failed to merge session history:', error);
-            }
+            // Don't await - let it run in background after a short delay
+            setTimeout(() => {
+                api.post('/search/merge-session').catch(() => {
+                    // Silently fail - session merge is not critical
+                });
+            }, 100);
         }
-    };
 
-    const register = async (email: string, password: string, name?: string) => {
-        const { data } = await api.post<AuthResponse>('/auth/register', {
+        // Return user data so login page can use it for redirect
+        return userData;
+    }, []);
+
+    const register = useCallback(async (email: string, password: string, name?: string, phone?: string, acceptedTerms?: boolean, acceptedPrivacy?: boolean) => {
+        const response = await api.post<AuthResponse>('/auth/register', {
             email,
             password,
             name,
+            phone,
+            acceptedTerms: acceptedTerms ?? false,
+            acceptedPrivacy: acceptedPrivacy ?? false,
         });
 
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        setUser(data.user);
+        // Handle both direct response and nested data
+        const data = response.data || response;
+        
+        // Validate response structure
+        if (!data || !data.user || (!data.accessToken && !data.access_token)) {
+            throw new Error('Invalid registration response: missing required fields');
+        }
 
-        // Merge anonymous session history to user account
+        const accessToken = data.accessToken || data.access_token;
+        const refreshToken = data.refreshToken || data.refresh_token;
+
+        if (!accessToken || !refreshToken) {
+            throw new Error('Invalid registration response: missing tokens');
+        }
+
+        // Ensure user object has all required fields
+        const userData: User = {
+            ...data.user,
+            createdAt: data.user.createdAt || new Date().toISOString(),
+            updatedAt: data.user.updatedAt || new Date().toISOString(),
+        };
+
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('userId', userData.id);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+
+        // Merge anonymous session history to user account (non-blocking)
         const sessionId = getSessionIdForMigration();
         if (sessionId) {
-            try {
-                await api.post('/search/merge-session');
-            } catch (error) {
-                // Silently fail - session merge is not critical
-                console.warn('Failed to merge session history:', error);
-            }
+            // Don't await - let it run in background after a short delay
+            setTimeout(() => {
+                api.post('/search/merge-session').catch(() => {
+                    // Silently fail - session merge is not critical
+                });
+            }, 100);
         }
-    };
 
-    const logout = () => {
+        // Return user data so register page can use it for redirect
+        return userData;
+    }, []);
+
+    const logout = useCallback(() => {
         localStorage.clear();
         setUser(null);
-    };
+    }, []);
+
+    // Memoize context value to prevent unnecessary re-renders
+    const value: AuthContextType = useMemo(() => ({
+        user,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!user,
+        isLoading,
+    }), [user, login, register, logout, isLoading]);
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                login,
-                register,
-                logout,
-                isAuthenticated: !!user,
-                isLoading,
-            }}
-        >
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

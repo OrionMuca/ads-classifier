@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
@@ -27,61 +27,79 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated } = useAuth();
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const socketRef = useRef<Socket | null>(null);
+    const isAuthenticatedRef = useRef(isAuthenticated);
+
+    // Update ref when isAuthenticated changes
     useEffect(() => {
+        isAuthenticatedRef.current = isAuthenticated;
+    }, [isAuthenticated]);
+
+    useEffect(() => {
+        // Don't reconnect if already connected and auth state hasn't actually changed
+        if (socketRef.current?.connected && isAuthenticated === isAuthenticatedRef.current) {
+            return;
+        }
+
         if (!isAuthenticated) {
-            setSocket((current) => {
-                current?.disconnect();
-                return null;
-            });
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+            setSocket(null);
             setIsConnected(false);
             return;
         }
 
         const token = getStoredToken();
         if (!token) {
-            setSocket((current) => {
-                current?.disconnect();
-                return null;
-            });
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+            setSocket(null);
             setIsConnected(false);
             return;
         }
 
-        // Connect to WebSocket server
-        const newSocket = io(SOCKET_URL, {
-            auth: {
-                token,
-            },
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-        });
+        // Only create new socket if we don't have one or it's disconnected
+        if (!socketRef.current || !socketRef.current.connected) {
+            const newSocket = io(SOCKET_URL, {
+                auth: { token },
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+            });
 
-        newSocket.on('connect', () => {
-            console.log('Socket connected');
-            setIsConnected(true);
-        });
+            newSocket.on('connect', () => {
+                setIsConnected(true);
+            });
 
-        newSocket.on('disconnect', () => {
-            console.log('Socket disconnected');
-            setIsConnected(false);
-        });
+            newSocket.on('disconnect', () => {
+                setIsConnected(false);
+            });
 
-        newSocket.on('connect_error', (error) => {
-            console.error('Socket connection error:', error);
-            setIsConnected(false);
-        });
+            newSocket.on('connect_error', () => {
+                setIsConnected(false);
+            });
 
-        setSocket(newSocket);
+            socketRef.current = newSocket;
+            setSocket(newSocket);
+        }
 
         return () => {
-            newSocket.disconnect();
-            setIsConnected(false);
+            // Only cleanup on unmount, not on every render
         };
     }, [isAuthenticated]);
 
+    // Memoize context value to prevent unnecessary re-renders
+    const value = useMemo(() => ({
+        socket,
+        isConnected,
+    }), [socket, isConnected]);
+
     return (
-        <SocketContext.Provider value={{ socket, isConnected }}>
+        <SocketContext.Provider value={value}>
             {children}
         </SocketContext.Provider>
     );
